@@ -1,0 +1,24 @@
+namespace Magalcom.Crm.Shared.Contracts.Shell;
+
+public sealed record ShellContextMessageDto(
+    string Type,
+    string Version,
+    Guid CorrelationId,
+    string Environment,
+    ShellUserDto User,
+    ShellConfigurationDto Configuration);
+
+public sealed record ShellUserDto(
+    string SubjectId,
+    string DisplayName,
+    string Email,
+    IReadOnlyCollection<string> Roles);
+
+public sealed record ShellConfigurationDto(
+    string ApiBaseUrl,
+    FeatureFlagsDto FeatureFlags);
+
+public sealed record FeatureFlagsDto(
+    bool LeadsModule,
+    bool MiniAppsExternalOrigins,
+    bool BiChatScaffold);

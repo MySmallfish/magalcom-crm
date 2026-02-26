@@ -1,0 +1,72 @@
+name: magalcom-crm-local
+
+services:
+  webapp:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.webapp
+    container_name: magalcom-webapp
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Shell__ApiBaseUrl: http://localhost:7002
+      Shell__Authentication__DisableAuthentication: "true"
+      Features__LeadsModule: "true"
+      Features__MiniAppsExternalOrigins: "false"
+      Features__BiChatScaffold: "true"
+      MiniApps__AllowedOrigins__0: http://localhost:7001
+    ports:
+      - "7001:8080"
+    depends_on:
+      - webapi
+
+  webapi:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.webapi
+    container_name: magalcom-webapi
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Authentication__DisableAuthentication: "true"
+      DataAccess__Provider: InMemory
+      Cors__AllowedOrigins__0: http://localhost:7001
+      Features__LeadsModule: "true"
+      Features__MiniAppsExternalOrigins: "false"
+      Features__BiChatScaffold: "true"
+      MiniApps__Items__0__Id: hello-mini
+      MiniApps__Items__0__Title: Hello Mini App
+      MiniApps__Items__0__Route: /mini-apps/hello
+      MiniApps__Items__0__Url: http://localhost:7001/miniapps/hello/index.html
+      MiniApps__Items__0__Origin: http://localhost:7001
+      MiniApps__Items__0__Enabled: "true"
+    ports:
+      - "7002:8080"
+    depends_on:
+      - sqlserver
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.backend
+    container_name: magalcom-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DataAccess__Provider: InMemory
+    ports:
+      - "7003:8080"
+    depends_on:
+      - webapi
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: magalcom-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Your_strong_password123"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  sqlserver_data:

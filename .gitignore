@@ -1,0 +1,32 @@
+# Build outputs
+bin/
+obj/
+out/
+artifacts/
+
+# Rider/VS/VSCode
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Test & coverage
+TestResults/
+coverage/
+*.coverage
+*.trx
+
+# Node
+node_modules/
+.playwright-cli/
+.codex/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-data/

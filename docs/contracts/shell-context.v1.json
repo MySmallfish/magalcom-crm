@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magalcom.shell.context.v1",
+  "title": "magalcom.shell.context.v1",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "correlationId",
+    "environment",
+    "user",
+    "configuration"
+  ],
+  "properties": {
+    "type": {
+      "const": "magalcom.shell.context"
+    },
+    "version": {
+      "const": "v1"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "user": {
+      "type": "object",
+      "required": ["subjectId", "displayName", "email", "roles"],
+      "properties": {
+        "subjectId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "required": ["apiBaseUrl", "featureFlags"],
+      "properties": {
+        "apiBaseUrl": { "type": "string" },
+        "featureFlags": {
+          "type": "object",
+          "properties": {
+            "leadsModule": { "type": "boolean" },
+            "miniAppsExternalOrigins": { "type": "boolean" },
+            "biChatScaffold": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

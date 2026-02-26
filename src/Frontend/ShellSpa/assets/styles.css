@@ -1,0 +1,28 @@
+:root {
+  --surface: #f6f8fc;
+  --surface-strong: #ffffff;
+  --text: #1a2a3a;
+  --muted: #5d6b7c;
+  --accent: #067d68;
+  --accent-strong: #025547;
+  --border: #d8e0ea;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: linear-gradient(180deg, #f2f6fa 0%, #e6eef6 100%);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+mc-shell-app {
+  display: block;
+  min-height: 100vh;
+}

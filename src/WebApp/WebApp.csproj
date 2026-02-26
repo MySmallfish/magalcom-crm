@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Magalcom.Crm.WebApp</RootNamespace>
+    <AssemblyName>Magalcom.Crm.WebApp</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Shared/Contracts/Contracts.csproj" />
+  </ItemGroup>
+</Project>

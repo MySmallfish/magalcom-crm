@@ -1,0 +1,9 @@
+.git
+.gitignore
+.vscode
+.idea
+**/bin
+**/obj
+**/TestResults
+README.md
+docs/

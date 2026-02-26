@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magalcom.sitemap.v1",
+  "title": "magalcom.sitemap.v1",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "title", "route", "order", "children"],
+    "properties": {
+      "id": { "type": "string" },
+      "title": { "type": "string" },
+      "route": { "type": "string" },
+      "order": { "type": "integer" },
+      "icon": { "type": ["string", "null"] },
+      "requiredRoles": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "children": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/sitemapNode" }
+      }
+    },
+    "additionalProperties": false
+  },
+  "$defs": {
+    "sitemapNode": {
+      "type": "object",
+      "required": ["id", "title", "route", "order", "children"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "route": { "type": "string" },
+        "order": { "type": "integer" },
+        "icon": { "type": ["string", "null"] },
+        "requiredRoles": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sitemapNode" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

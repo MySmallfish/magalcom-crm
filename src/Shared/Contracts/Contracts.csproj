@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Magalcom.Crm.Shared.Contracts</RootNamespace>
+    <AssemblyName>Magalcom.Crm.Shared.Contracts</AssemblyName>
+  </PropertyGroup>
+</Project>

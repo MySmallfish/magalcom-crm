@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Magalcom.Crm.WebApi</RootNamespace>
+    <AssemblyName>Magalcom.Crm.WebApi</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Shared/Contracts/Contracts.csproj" />
+    <ProjectReference Include="../Shared/Messaging/Messaging.csproj" />
+    <ProjectReference Include="../Shared/Data/Data.csproj" />
+  </ItemGroup>
+</Project>

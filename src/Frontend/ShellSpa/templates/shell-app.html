@@ -1,0 +1,64 @@
+<style>
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    background: #ffffff;
+    border-right: 1px solid #d8e0ea;
+    padding: 1rem;
+  }
+
+  .brand {
+    margin: 0 0 1rem 0;
+    color: #025547;
+    letter-spacing: 0.05em;
+  }
+
+  .content {
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    border-bottom: 1px solid #d8e0ea;
+    padding: 0.75rem 1rem;
+  }
+
+  .page {
+    padding: 1rem;
+  }
+
+  @media (max-width: 900px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      border-right: 0;
+      border-bottom: 1px solid #d8e0ea;
+    }
+  }
+</style>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h1 class="brand">Magalcom CRM</h1>
+    <mc-side-menu></mc-side-menu>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div>Environment: <strong data-environment></strong></div>
+      <mc-profile-popover></mc-profile-popover>
+    </header>
+
+    <main class="page" data-page-host></main>
+  </div>
+</div>

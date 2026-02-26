@@ -1,0 +1,14 @@
+flowchart LR
+  U["User Browser"] --> WA["WebApp (.NET 10)\\nShell SPA + static host"]
+  WA --> SPA["Shell SPA\\nWeb Components + XState"]
+  SPA --> ENTRA["Microsoft Entra ID\\nOIDC/OAuth2 PKCE"]
+  SPA --> API["WebApi (.NET 10 Minimal API)\\nJWT Bearer secured"]
+  SPA --> IFH["Mini-App Host (iframe)\\nInternal allowlist only"]
+  IFH <-->|"postMessage Context V1"| MINI["Mini Apps\\n(local html/js/css or iframe app)"]
+  API --> DB["SQL Server\\nViews for read, SPs for write"]
+  API --> SB["Azure Service Bus\\ncommands/events"]
+  SB --> BE["Backend (.NET 10 Worker)\\nlong-running jobs/scheduled tasks"]
+  BE --> DB
+  API --> OBS["Logging + Diagnostics\\nOpenTelemetry + structured logs"]
+  WA --> OBS
+  BE --> OBS

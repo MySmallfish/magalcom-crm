@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello Mini App</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 1rem;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f8fbff;
+      }
+
+      .card {
+        background: #ffffff;
+        border: 1px solid #d8e0ea;
+        border-radius: 0.8rem;
+        padding: 1rem;
+      }
+
+      button {
+        border: 1px solid #067d68;
+        border-radius: 0.5rem;
+        background: #0a9078;
+        color: #fff;
+        padding: 0.45rem 0.7rem;
+        cursor: pointer;
+      }
+
+      pre {
+        background: #f0f5fb;
+        border-radius: 0.4rem;
+        padding: 0.5rem;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="card">
+      <h2>Hello Mini App</h2>
+      <p>This mini app receives shell context through <code>postMessage</code>.</p>
+      <button id="notify">Send Command To Shell</button>
+      <pre id="payload">Waiting for context...</pre>
+    </section>
+
+    <script>
+      const payloadEl = document.getElementById("payload");
+      const notifyBtn = document.getElementById("notify");
+
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+
+        if (!message || message.type !== "magalcom.shell.context" || message.version !== "v1") {
+          return;
+        }
+
+        payloadEl.textContent = JSON.stringify(message, null, 2);
+      });
+
+      notifyBtn.addEventListener("click", () => {
+        window.parent.postMessage(
+          {
+            type: "magalcom.miniapp.command",
+            version: "v1",
+            command: "shell.notify",
+            payload: {
+              message: "Hello from mini app"
+            }
+          },
+          "*"
+        );
+      });
+    </script>
+  </body>
+</html>

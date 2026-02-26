@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Magalcom.Crm.Backend</RootNamespace>
+    <AssemblyName>Magalcom.Crm.Backend</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Shared/Contracts/Contracts.csproj" />
+    <ProjectReference Include="../Shared/Messaging/Messaging.csproj" />
+    <ProjectReference Include="../Shared/Data/Data.csproj" />
+  </ItemGroup>
+</Project>

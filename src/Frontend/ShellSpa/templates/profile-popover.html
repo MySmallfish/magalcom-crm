@@ -1,0 +1,46 @@
+<style>
+  .wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .user {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .name {
+    font-weight: 600;
+  }
+
+  .email {
+    color: #5d6b7c;
+    font-size: 0.85rem;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  button {
+    border: 1px solid #d8e0ea;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    padding: 0.5rem 0.7rem;
+    cursor: pointer;
+  }
+</style>
+
+<div class="wrapper">
+  <div class="user">
+    <span class="name" data-user-name></span>
+    <span class="email" data-user-email></span>
+  </div>
+  <div class="actions">
+    <button type="button" data-command="profile.open">Profile</button>
+    <button type="button" data-command="auth.logout">Logout</button>
+  </div>
+</div>
