@@ -52,6 +52,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
 {
         options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
+        options.IncludeErrorDetails = builder.Environment.IsDevelopment();
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -76,6 +77,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = accessToken;
                 }
 
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Magalcom.Crm.WebApi.Authentication");
+
+                logger.LogError(
+                    context.Exception,
+                    "JWT authentication failed for {Path}.",
+                    context.HttpContext.Request.Path);
+
+                context.NoResult();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             }
         };
@@ -105,6 +121,11 @@ builder.Services.AddSingleton<IEventPublisher>(sp => sp.GetRequiredService<InMem
 builder.Services.AddSingleton<IBackgroundJobQueue>(sp => sp.GetRequiredService<InMemoryMessageTransport>());
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors("ShellSpa");
