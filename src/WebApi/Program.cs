@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Magalcom.Crm.Shared.Contracts.Admin;
 using Magalcom.Crm.Shared.Contracts.Identity;
+using Magalcom.Crm.Shared.Contracts.Leads;
 using Magalcom.Crm.Shared.Contracts.Shell;
 using Magalcom.Crm.Shared.Data.InMemory;
 using Magalcom.Crm.Shared.Data.Interfaces;
@@ -19,6 +21,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSignalR();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.Configure<FeatureFlagsOptions>(builder.Configuration.GetSection(FeatureFlagsOptions.SectionName));
 builder.Services.Configure<MiniAppsOptions>(builder.Configuration.GetSection(MiniAppsOptions.SectionName));
@@ -106,11 +112,13 @@ builder.Services.AddAuthorization(options =>
 var provider = builder.Configuration.GetValue<string>("DataAccess:Provider") ?? "InMemory";
 if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
+    builder.Services.AddScoped<ILeadDataService, SqlServerLeadDataService>();
     builder.Services.AddScoped<IProjectDataService, SqlServerProjectDataService>();
     builder.Services.AddScoped<IFormulaDataService, SqlServerFormulaDataService>();
 }
 else
 {
+    builder.Services.AddSingleton<ILeadDataService, InMemoryLeadDataService>();
     builder.Services.AddSingleton<IProjectDataService, InMemoryProjectDataService>();
     builder.Services.AddSingleton<IFormulaDataService, InMemoryFormulaDataService>();
 }
@@ -196,7 +204,73 @@ api.MapGet("/miniapps", (IOptions<MiniAppsOptions> options, ClaimsPrincipal user
     return Results.Ok(items);
 });
 
+api.MapGet("/leads/metadata", async (ILeadDataService service, CancellationToken cancellationToken) =>
+    Results.Ok(await service.GetMetadataAsync(cancellationToken)));
+
+api.MapGet("/leads", async (ILeadDataService service, CancellationToken cancellationToken) =>
+    Results.Ok(await service.GetLeadsAsync(cancellationToken)));
+
+api.MapGet("/leads/{id:guid}", async (Guid id, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    var lead = await service.GetLeadByIdAsync(id, cancellationToken);
+    return lead is null ? Results.NotFound() : Results.Ok(lead);
+});
+
+api.MapPost("/leads", async (CreateLeadRequest request, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var created = await service.AddLeadAsync(request, ResolveLeadActor(user), cancellationToken);
+        return Results.Created($"/api/v1/leads/{created.Id}", created);
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(new { error = error.Message });
+    }
+});
+
+api.MapPut("/leads/{id:guid}", async (Guid id, UpdateLeadRequest request, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var updated = await service.SaveLeadAsync(id, request, ResolveLeadActor(user), cancellationToken);
+        return updated is null ? Results.NotFound() : Results.Ok(updated);
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(new { error = error.Message });
+    }
+});
 var admin = api.MapGroup("/admin").RequireAuthorization("AdminOnly");
+
+admin.MapGet("/work-types", async (ILeadDataService service, CancellationToken cancellationToken) =>
+    Results.Ok(await service.GetWorkTypesAsync(cancellationToken)));
+
+admin.MapPost("/work-types", async (CreateWorkTypeRequest request, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var created = await service.AddWorkTypeAsync(request, ResolveLeadActor(user), cancellationToken);
+        return Results.Created($"/api/v1/admin/work-types/{created.Id}", created);
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(new { error = error.Message });
+    }
+});
+
+admin.MapPut("/work-types/{id:guid}", async (Guid id, UpdateWorkTypeRequest request, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var updated = await service.SaveWorkTypeAsync(id, request, ResolveLeadActor(user), cancellationToken);
+        return updated is null ? Results.NotFound() : Results.Ok(updated);
+    }
+    catch (ArgumentException error)
+    {
+        return Results.BadRequest(new { error = error.Message });
+    }
+});
 
 admin.MapGet("/projects", async (IProjectDataService service, CancellationToken cancellationToken) =>
     Results.Ok(await service.GetProjectsAsync(cancellationToken)));
@@ -215,6 +289,23 @@ admin.MapPut("/formulas/{id:guid}", async (Guid id, UpdateFormulaRequest request
     var updated = await service.SaveFormulaAsync(id, request, cancellationToken);
     return updated is null ? Results.NotFound() : Results.Ok(updated);
 });
+
+static LeadOwnerDto ResolveLeadActor(ClaimsPrincipal user)
+{
+    var subjectId = user.FindFirstValue("oid")
+                    ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? "unknown";
+
+    var displayName = user.Identity?.Name
+                      ?? user.FindFirstValue("name")
+                      ?? "Unknown User";
+
+    var email = user.FindFirstValue("preferred_username")
+                ?? user.FindFirstValue(ClaimTypes.Email)
+                ?? "unknown@magalcom.local";
+
+    return new LeadOwnerDto(subjectId, displayName, email);
+}
 
 app.Run();
 
@@ -274,4 +365,8 @@ static SitemapItemDto? BuildSitemapItem(
 
     var children = BuildSitemap(item.Children, availableMiniApps, roles);
     return new SitemapItemDto(item.Id, resolvedTitle, resolvedRoute, item.Order, item.Icon, item.RequiredRoles, children);
+}
+
+public partial class Program
+{
 }

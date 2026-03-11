@@ -8,6 +8,7 @@
     "version",
     "correlationId",
     "environment",
+    "accessToken",
     "user",
     "configuration"
   ],
@@ -24,6 +25,10 @@
     },
     "environment": {
       "type": "string"
+    },
+    "accessToken": {
+      "type": "string",
+      "minLength": 1
     },
     "user": {
       "type": "object",

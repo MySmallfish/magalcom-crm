@@ -10,6 +10,7 @@ const textCatalog = Object.freeze({
   "menu.home": { he: "בית", en: "Home" },
   "menu.profile": { he: "פרופיל", en: "Profile" },
   "menu.mini-apps": { he: "מיני אפליקציות", en: "Mini Apps" },
+  "menu.leads": { he: "ניהול לידים", en: "Leads Management" },
   "profile.guest": { he: "אורח", en: "Guest" },
   "profile.open": { he: "פרופיל", en: "Profile" },
   "profile.logout": { he: "התנתקות", en: "Logout" },
@@ -49,7 +50,9 @@ const textCatalog = Object.freeze({
   "miniapp.notFoundDescription": { he: "המיני אפליקציה עם המזהה {miniAppId} אינה זמינה למשתמש זה.", en: "Mini-app with id {miniAppId} is not available for this user." }
 });
 
-const miniAppTitleCatalog = Object.freeze({});
+const miniAppTitleCatalog = Object.freeze({
+  "leads-management": { he: "ניהול לידים", en: "Leads Management" }
+});
 
 function applyParams(template, params) {
   return template.replace(/\{(\w+)\}/g, (match, key) => {

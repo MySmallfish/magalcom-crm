@@ -754,7 +754,7 @@ export class McShellApp extends HTMLElement {
     const frame = document.createElement("mc-miniapp-frame");
     frame.miniApp = localizedMiniApp;
 
-    frame.addEventListener("miniapp-loaded", () => {
+    frame.addEventListener("miniapp-loaded", async () => {
       const shellUser = context.user || {
         subjectId: "unknown",
         displayName: this.#translate("common.notAvailable"),
@@ -762,26 +762,32 @@ export class McShellApp extends HTMLElement {
         roles: []
       };
 
-      const contextPayload = {
-        correlationId: crypto.randomUUID(),
-        environment: this.#config.environment || "Development",
-        locale: this.#locale,
-        direction: this.#direction,
-        user: {
-          subjectId: shellUser.subjectId,
-          displayName: shellUser.displayName,
-          email: shellUser.email,
-          roles: shellUser.roles || []
-        },
-        configuration: {
-          apiBaseUrl: this.#config.apiBaseUrl,
-          featureFlags: this.#config.features
-        }
-      };
+      try {
+        const accessToken = await this.#authService.getAccessToken();
+        const contextPayload = {
+          correlationId: crypto.randomUUID(),
+          environment: this.#config.environment || "Development",
+          locale: this.#locale,
+          direction: this.#direction,
+          accessToken,
+          user: {
+            subjectId: shellUser.subjectId,
+            displayName: shellUser.displayName,
+            email: shellUser.email,
+            roles: shellUser.roles || []
+          },
+          configuration: {
+            apiBaseUrl: this.#config.apiBaseUrl,
+            featureFlags: this.#config.features
+          }
+        };
 
-      this.#miniAppBridge.sendContext(frame.iframeElement, localizedMiniApp.origin, contextPayload);
-      this.#activeMiniAppSession = { frame, miniApp: localizedMiniApp };
-      this.#state.send({ type: "ACTIVE_MINI_APP_CHANGED", miniAppId: localizedMiniApp.id });
+        this.#miniAppBridge.sendContext(frame.iframeElement, localizedMiniApp.origin, contextPayload);
+        this.#activeMiniAppSession = { frame, miniApp: localizedMiniApp };
+        this.#state.send({ type: "ACTIVE_MINI_APP_CHANGED", miniAppId: localizedMiniApp.id });
+      } catch (error) {
+        this.#notify(this.#translate("shell.routeRenderFailed", { message: String(error) }), "error");
+      }
     });
 
     body.appendChild(frame);

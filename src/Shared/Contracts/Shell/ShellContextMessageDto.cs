@@ -5,6 +5,7 @@ public sealed record ShellContextMessageDto(
     string Version,
     Guid CorrelationId,
     string Environment,
+    string AccessToken,
     ShellUserDto User,
     ShellConfigurationDto Configuration);
 
