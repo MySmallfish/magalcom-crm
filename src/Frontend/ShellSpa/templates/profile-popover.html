@@ -1,4 +1,8 @@
 <style>
+  :host {
+    display: block;
+  }
+
   .wrapper {
     display: flex;
     align-items: center;
@@ -22,7 +26,25 @@
 
   .actions {
     display: flex;
+    align-items: center;
     gap: 0.4rem;
+  }
+
+  .locale {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    align-items: flex-end;
+  }
+
+  .locale-label {
+    color: #5d6b7c;
+    font-size: 0.8rem;
+  }
+
+  .locale-actions {
+    display: flex;
+    gap: 0.35rem;
   }
 
   button {
@@ -32,12 +54,35 @@
     padding: 0.5rem 0.7rem;
     cursor: pointer;
   }
+
+  button.active {
+    border-color: #067d68;
+    background: #e7f7f3;
+    color: #025547;
+    font-weight: 700;
+  }
+
+  :host([dir="rtl"]) .wrapper {
+    flex-direction: row-reverse;
+  }
+
+  :host([dir="rtl"]) .user,
+  :host([dir="rtl"]) .locale {
+    align-items: flex-start;
+  }
 </style>
 
 <div class="wrapper">
   <div class="user">
     <span class="name" data-user-name></span>
     <span class="email" data-user-email></span>
+  </div>
+  <div class="locale">
+    <span class="locale-label" data-language-label>Language</span>
+    <div class="locale-actions">
+      <button type="button" data-locale="he">Hebrew</button>
+      <button type="button" data-locale="en">English</button>
+    </div>
   </div>
   <div class="actions">
     <button type="button" data-command="profile.open">Profile</button>

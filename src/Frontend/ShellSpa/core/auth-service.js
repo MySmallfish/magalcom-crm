@@ -1,3 +1,20 @@
+const MSAL_BROWSER_SCRIPT_PATH = "/assets/vendor/msal-browser.min.js";
+
+function isConfigured(value) {
+  return typeof value === "string" && value.trim() !== "" && !value.startsWith("REPLACE_WITH_");
+}
+
+function isInteractionRequired(error) {
+  const code = error?.errorCode || error?.code || "";
+  return [
+    "interaction_required",
+    "login_required",
+    "consent_required",
+    "no_tokens_found",
+    "token_refresh_required"
+  ].includes(code);
+}
+
 export class AuthService {
   #config;
   #msalClient;
@@ -8,30 +25,16 @@ export class AuthService {
   }
 
   async initialize() {
-    if (this.#config.authentication?.disableAuthentication) {
-      this.#account = {
-        homeAccountId: "dev-user-001",
-        name: "Development User",
-        username: "developer@magalcom.local",
-        idTokenClaims: {
-          roles: ["Admin", "Sales"],
-          oid: "dev-user-001"
-        }
-      };
-      return;
-    }
-
     await this.#ensureMsalLoaded();
 
-    if (!this.#config.authentication.clientId || !this.#config.authentication.tenantId) {
-      throw new Error("Entra authentication requires tenantId and clientId in shell configuration.");
-    }
-
+    const entra = this.#getEntraConfig();
     this.#msalClient = new window.msal.PublicClientApplication({
       auth: {
-        clientId: this.#config.authentication.clientId,
-        authority: `https://login.microsoftonline.com/${this.#config.authentication.tenantId}`,
-        redirectUri: window.location.origin
+        clientId: entra.clientId,
+        authority: `https://login.microsoftonline.com/${entra.tenantId}`,
+        redirectUri: entra.redirectUri,
+        postLogoutRedirectUri: entra.postLogoutRedirectUri,
+        navigateToLoginRequestUrl: true
       },
       cache: {
         cacheLocation: "sessionStorage",
@@ -44,11 +47,14 @@ export class AuthService {
     const redirectResult = await this.#msalClient.handleRedirectPromise();
     if (redirectResult?.account) {
       this.#account = redirectResult.account;
+      this.#msalClient.setActiveAccount(this.#account);
       return;
     }
 
-    const accounts = this.#msalClient.getAllAccounts();
-    this.#account = accounts.length > 0 ? accounts[0] : null;
+    this.#account = this.#msalClient.getActiveAccount() || this.#msalClient.getAllAccounts()[0] || null;
+    if (this.#account) {
+      this.#msalClient.setActiveAccount(this.#account);
+    }
   }
 
   async #ensureMsalLoaded() {
@@ -58,10 +64,10 @@ export class AuthService {
 
     await new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js";
+      script.src = MSAL_BROWSER_SCRIPT_PATH;
       script.async = true;
       script.onload = resolve;
-      script.onerror = () => reject(new Error("Failed to load MSAL library from CDN."));
+      script.onerror = () => reject(new Error(`Failed to load the Microsoft Authentication Library from ${MSAL_BROWSER_SCRIPT_PATH}.`));
       document.head.appendChild(script);
     });
 
@@ -70,27 +76,41 @@ export class AuthService {
     }
   }
 
-  async signIn() {
-    if (this.#config.authentication?.disableAuthentication) {
-      return;
+  #getEntraConfig() {
+    const authentication = this.#config.authentication || {};
+    const redirectUri = authentication.redirectUri || `${window.location.origin}/`;
+    const postLogoutRedirectUri = authentication.postLogoutRedirectUri || redirectUri;
+
+    if (!isConfigured(authentication.tenantId) || !isConfigured(authentication.clientId) || !isConfigured(authentication.scope)) {
+      throw new Error("Shell authentication is not configured. Set TenantId, SpaClientId, and Scope in appsettings.");
     }
 
-    const loginRequest = {
-      scopes: ["openid", "profile", this.#config.authentication.scope]
+    return {
+      tenantId: authentication.tenantId,
+      clientId: authentication.clientId,
+      scope: authentication.scope,
+      redirectUri,
+      postLogoutRedirectUri
     };
+  }
 
-    const response = await this.#msalClient.loginPopup(loginRequest);
-    this.#account = response.account;
+  #getLoginScopes() {
+    const { scope } = this.#getEntraConfig();
+    return [...new Set(["openid", "profile", "offline_access", scope].filter(Boolean))];
+  }
+
+  async signIn() {
+    await this.#msalClient.loginRedirect({
+      scopes: this.#getLoginScopes()
+    });
   }
 
   async signOut() {
-    if (this.#config.authentication?.disableAuthentication) {
-      this.#account = null;
-      return;
-    }
-
-    await this.#msalClient.logoutPopup({ account: this.#account });
-    this.#account = null;
+    const { postLogoutRedirectUri } = this.#getEntraConfig();
+    await this.#msalClient.logoutRedirect({
+      account: this.#account || this.#msalClient.getActiveAccount() || undefined,
+      postLogoutRedirectUri
+    });
   }
 
   getUserContext() {
@@ -98,31 +118,36 @@ export class AuthService {
       return null;
     }
 
-    const roles = this.#account.idTokenClaims?.roles || [];
+    const claims = this.#account.idTokenClaims || {};
+    const roles = Array.isArray(claims.roles) ? claims.roles : [];
 
     return {
-      subjectId: this.#account.idTokenClaims?.oid || this.#account.homeAccountId,
-      displayName: this.#account.name,
-      email: this.#account.username,
+      subjectId: claims.oid || this.#account.homeAccountId,
+      displayName: this.#account.name || claims.name || "",
+      email: this.#account.username || claims.preferred_username || "",
       roles
     };
   }
 
   async getAccessToken() {
-    if (this.#config.authentication?.disableAuthentication) {
-      return "dev-token";
-    }
-
     if (!this.#account) {
       throw new Error("User is not authenticated.");
     }
 
     const tokenRequest = {
       account: this.#account,
-      scopes: [this.#config.authentication.scope]
+      scopes: [this.#getEntraConfig().scope]
     };
 
-    const response = await this.#msalClient.acquireTokenSilent(tokenRequest);
-    return response.accessToken;
+    try {
+      const response = await this.#msalClient.acquireTokenSilent(tokenRequest);
+      return response.accessToken;
+    } catch (error) {
+      if (isInteractionRequired(error)) {
+        await this.#msalClient.acquireTokenRedirect(tokenRequest);
+      }
+
+      throw error;
+    }
   }
 }

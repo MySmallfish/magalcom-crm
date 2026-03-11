@@ -1,18 +1,17 @@
 using System.Security.Claims;
 using Magalcom.Crm.Shared.Contracts.Admin;
 using Magalcom.Crm.Shared.Contracts.Identity;
-using Magalcom.Crm.Shared.Contracts.Leads;
-using Magalcom.Crm.Shared.Contracts.Reports;
 using Magalcom.Crm.Shared.Contracts.Shell;
 using Magalcom.Crm.Shared.Data.InMemory;
 using Magalcom.Crm.Shared.Data.Interfaces;
+using Magalcom.Crm.Shared.Data.Options;
 using Magalcom.Crm.Shared.Data.SqlServer;
 using Magalcom.Crm.Shared.Messaging;
 using Magalcom.Crm.WebApi.Configuration;
 using Magalcom.Crm.WebApi.Hubs;
 using Magalcom.Crm.WebApi.Infrastructure;
-using Magalcom.Crm.WebApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +22,9 @@ builder.Services.AddSignalR();
 
 builder.Services.Configure<FeatureFlagsOptions>(builder.Configuration.GetSection(FeatureFlagsOptions.SectionName));
 builder.Services.Configure<MiniAppsOptions>(builder.Configuration.GetSection(MiniAppsOptions.SectionName));
+builder.Services.Configure<ShellNavigationOptions>(builder.Configuration.GetSection(ShellNavigationOptions.SectionName));
+builder.Services.Configure<DataAccessOptions>(builder.Configuration.GetSection(DataAccessOptions.SectionName));
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DataAccessOptions>>().Value);
 
 builder.Services.AddCors(options =>
 {
@@ -38,44 +40,61 @@ builder.Services.AddCors(options =>
     });
 });
 
-var authDisabled = builder.Configuration.GetValue<bool>("Authentication:DisableAuthentication");
-if (!authDisabled)
+var tenantId = builder.Configuration["Authentication:Entra:TenantId"];
+var apiClientId = builder.Configuration["Authentication:Entra:ApiClientId"];
+var audience = builder.Configuration["Authentication:Entra:Audience"];
+if (!IsConfigured(tenantId) || !IsConfigured(apiClientId) || !IsConfigured(audience))
 {
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            var tenantId = builder.Configuration["Authentication:Entra:TenantId"];
-            var audience = builder.Configuration["Authentication:Entra:ApiClientId"];
-            if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(audience))
-            {
-                throw new InvalidOperationException("Authentication:Entra:TenantId and Authentication:Entra:ApiClientId are required when authentication is enabled.");
-            }
+    throw new InvalidOperationException("Authentication:Entra:TenantId, ApiClientId, and Audience must be configured in appsettings.");
+}
 
-            options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
-            options.Audience = audience;
-            options.MapInboundClaims = true;
-        });
-}
-else
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
 {
-    builder.Services.AddAuthentication();
-}
+        options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuers =
+            [
+                $"https://login.microsoftonline.com/{tenantId}/v2.0",
+                $"https://sts.windows.net/{tenantId}/"
+            ],
+            ValidAudiences = [apiClientId, audience],
+            NameClaimType = "name",
+            RoleClaimType = "roles"
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrWhiteSpace(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments("/hubs/updates"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("CrmUser", policy => policy.RequireRole("CrmUser", "Admin"));
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
 var provider = builder.Configuration.GetValue<string>("DataAccess:Provider") ?? "InMemory";
 if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddScoped<ILeadDataService, SqlServerLeadDataService>();
     builder.Services.AddScoped<IProjectDataService, SqlServerProjectDataService>();
     builder.Services.AddScoped<IFormulaDataService, SqlServerFormulaDataService>();
 }
 else
 {
-    builder.Services.AddSingleton<ILeadDataService, InMemoryLeadDataService>();
     builder.Services.AddSingleton<IProjectDataService, InMemoryProjectDataService>();
     builder.Services.AddSingleton<IFormulaDataService, InMemoryFormulaDataService>();
 }
@@ -84,44 +103,20 @@ builder.Services.AddSingleton<InMemoryMessageTransport>();
 builder.Services.AddSingleton<ICommandPublisher>(sp => sp.GetRequiredService<InMemoryMessageTransport>());
 builder.Services.AddSingleton<IEventPublisher>(sp => sp.GetRequiredService<InMemoryMessageTransport>());
 builder.Services.AddSingleton<IBackgroundJobQueue>(sp => sp.GetRequiredService<InMemoryMessageTransport>());
-builder.Services.AddSingleton<PredictionJobStore>();
 
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors("ShellSpa");
-
-if (authDisabled)
-{
-    app.Use(async (context, next) =>
-    {
-        var claims = new List<Claim>
-        {
-            new("oid", "dev-user-001"),
-            new(ClaimTypes.NameIdentifier, "dev-user-001"),
-            new(ClaimTypes.Name, "Development User"),
-            new(ClaimTypes.Email, "developer@magalcom.local"),
-            new(ClaimTypes.Role, "Admin"),
-            new(ClaimTypes.Role, "Sales")
-        };
-
-        context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Development"));
-        await next();
-    });
-}
-else
-{
-    app.UseAuthentication();
-}
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");
-app.MapHub<UpdatesHub>("/hubs/updates");
+app.MapHub<UpdatesHub>("/hubs/updates").RequireAuthorization("CrmUser");
 
 var api = app.MapGroup("/api/v1");
-api.RequireAuthorization();
+api.RequireAuthorization("CrmUser");
 
 api.MapGet("/me", (ClaimsPrincipal user) =>
 {
@@ -137,72 +132,31 @@ api.MapGet("/me", (ClaimsPrincipal user) =>
 
     var displayName = user.Identity?.Name
                       ?? user.FindFirstValue("name")
-                      ?? "Unknown User";
+                      ?? string.Empty;
 
     var email = user.FindFirstValue("preferred_username")
+                ?? user.FindFirstValue("upn")
+                ?? user.FindFirstValue("unique_name")
                 ?? user.FindFirstValue(ClaimTypes.Email)
-                ?? "unknown@magalcom.local";
+                ?? string.Empty;
 
     return Results.Ok(new UserContextDto(subjectId, displayName, email, roles));
 });
 
-api.MapGet("/sitemap", (ClaimsPrincipal user, IOptions<FeatureFlagsOptions> flagsOptions) =>
+api.MapGet("/sitemap", (ClaimsPrincipal user, IOptions<ShellNavigationOptions> navigationOptions, IOptions<MiniAppsOptions> miniAppsOptions) =>
 {
-    var flags = flagsOptions.Value;
     var roles = user.Claims
         .Where(c => c.Type is "roles" or ClaimTypes.Role)
         .Select(c => c.Value)
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-    var items = new List<SitemapItemDto>
-    {
-        new(
-            "home",
-            "Home",
-            "/",
-            1,
-            "home",
-            [],
-            []),
-        new(
-            "profile",
-            "Profile",
-            "/profile",
-            2,
-            "user",
-            [],
-            []),
-        new(
-            "mini-apps",
-            "Mini Apps",
-            "/mini-apps",
-            3,
-            "apps",
-            [],
-            []),
-        new(
-            "leads",
-            "Leads",
-            "/leads",
-            4,
-            "leads",
-            ["Sales", "Admin"],
-            [])
-    };
+    var availableMiniApps = miniAppsOptions.Value.Items
+        .Where(item => item.Enabled)
+        .Where(item => item.RequiredRoles.Count == 0 || item.RequiredRoles.Any(role => roles.Contains(role)))
+        .ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase);
 
-    var filtered = items
-        .Where(item =>
-            item.RequiredRoles.Count == 0
-            || item.RequiredRoles.Any(required => roles.Contains(required)))
-        .OrderBy(item => item.Order)
-        .ToArray();
-
-    if (!flags.LeadsModule)
-    {
-        filtered = filtered.Where(item => !string.Equals(item.Id, "leads", StringComparison.OrdinalIgnoreCase)).ToArray();
-    }
-
-    return Results.Ok(filtered);
+    var items = BuildSitemap(navigationOptions.Value.Items, availableMiniApps, roles);
+    return Results.Ok(items);
 });
 
 api.MapGet("/miniapps", (IOptions<MiniAppsOptions> options, ClaimsPrincipal user) =>
@@ -219,65 +173,6 @@ api.MapGet("/miniapps", (IOptions<MiniAppsOptions> options, ClaimsPrincipal user
         .ToArray();
 
     return Results.Ok(items);
-});
-
-api.MapGet("/leads", async (ILeadDataService service, CancellationToken cancellationToken) =>
-    Results.Ok(await service.GetLeadsAsync(cancellationToken)));
-
-api.MapGet("/leads/{id:guid}", async (Guid id, ILeadDataService service, CancellationToken cancellationToken) =>
-{
-    var lead = await service.GetLeadByIdAsync(id, cancellationToken);
-    return lead is null ? Results.NotFound() : Results.Ok(lead);
-});
-
-api.MapPost("/leads", async (CreateLeadRequest request, ILeadDataService service, CancellationToken cancellationToken) =>
-{
-    var created = await service.AddLeadAsync(request, cancellationToken);
-    return Results.Created($"/api/v1/leads/{created.Id}", created);
-});
-
-api.MapPut("/leads/{id:guid}", async (Guid id, UpdateLeadRequest request, ILeadDataService service, CancellationToken cancellationToken) =>
-{
-    var updated = await service.SaveLeadAsync(id, request, cancellationToken);
-    return updated is null ? Results.NotFound() : Results.Ok(updated);
-});
-
-api.MapPost("/reports/predictions/jobs", async (
-    CreatePredictionJobRequest request,
-    ClaimsPrincipal user,
-    IBackgroundJobQueue queue,
-    PredictionJobStore store,
-    CancellationToken cancellationToken) =>
-{
-    var now = DateTime.UtcNow;
-    var job = new PredictionJobDto(
-        Guid.NewGuid(),
-        PredictionJobStatus.Queued,
-        now,
-        null,
-        null,
-        null);
-
-    store.Set(job);
-
-    var metadata = new MessageMetadata(
-        Guid.NewGuid(),
-        Guid.NewGuid(),
-        null,
-        "magalcom",
-        user.FindFirstValue("oid") ?? "unknown",
-        now);
-
-    var envelope = new MessageEnvelope<CreatePredictionJobRequest>(metadata, "prediction.job.requested.v1", request);
-    await queue.EnqueueAsync(envelope, cancellationToken);
-
-    return Results.Accepted($"/api/v1/reports/predictions/jobs/{job.JobId}", job);
-});
-
-api.MapGet("/reports/predictions/jobs/{jobId:guid}", (Guid jobId, PredictionJobStore store) =>
-{
-    var found = store.TryGet(jobId, out var job);
-    return found ? Results.Ok(job) : Results.NotFound();
 });
 
 var admin = api.MapGroup("/admin").RequireAuthorization("AdminOnly");
@@ -301,3 +196,61 @@ admin.MapPut("/formulas/{id:guid}", async (Guid id, UpdateFormulaRequest request
 });
 
 app.Run();
+
+static bool IsConfigured(string? value)
+{
+    return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase);
+}
+
+static SitemapItemDto[] BuildSitemap(
+    IEnumerable<ShellNavigationItemOptions> items,
+    IReadOnlyDictionary<string, MiniAppOptionsItem> availableMiniApps,
+    ISet<string> roles)
+{
+    return items
+        .Select(item => BuildSitemapItem(item, availableMiniApps, roles))
+        .Where(item => item is not null)
+        .Cast<SitemapItemDto>()
+        .OrderBy(item => item.Order)
+        .ToArray();
+}
+
+static SitemapItemDto? BuildSitemapItem(
+    ShellNavigationItemOptions item,
+    IReadOnlyDictionary<string, MiniAppOptionsItem> availableMiniApps,
+    ISet<string> roles)
+{
+    if (item.RequiredRoles.Count > 0 && !item.RequiredRoles.Any(role => roles.Contains(role)))
+    {
+        return null;
+    }
+
+    string resolvedTitle = item.Title;
+    string resolvedRoute = item.Route;
+
+    if (!string.IsNullOrWhiteSpace(item.MiniAppId))
+    {
+        if (!availableMiniApps.TryGetValue(item.MiniAppId, out var miniApp))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedTitle))
+        {
+            resolvedTitle = miniApp.Title;
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedRoute))
+        {
+            resolvedRoute = miniApp.Route;
+        }
+    }
+
+    if (string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(resolvedTitle) || string.IsNullOrWhiteSpace(resolvedRoute))
+    {
+        return null;
+    }
+
+    var children = BuildSitemap(item.Children, availableMiniApps, roles);
+    return new SitemapItemDto(item.Id, resolvedTitle, resolvedRoute, item.Order, item.Icon, item.RequiredRoles, children);
+}

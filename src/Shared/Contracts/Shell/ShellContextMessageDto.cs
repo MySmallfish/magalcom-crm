@@ -19,6 +19,5 @@ public sealed record ShellConfigurationDto(
     FeatureFlagsDto FeatureFlags);
 
 public sealed record FeatureFlagsDto(
-    bool LeadsModule,
     bool MiniAppsExternalOrigins,
     bool BiChatScaffold);

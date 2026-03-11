@@ -42,8 +42,4 @@ export class ApiClient {
   getMiniApps() {
     return this.#request("/api/v1/miniapps");
   }
-
-  getLeads() {
-    return this.#request("/api/v1/leads");
-  }
 }

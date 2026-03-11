@@ -9,8 +9,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Shell__ApiBaseUrl: http://localhost:7002
-      Shell__Authentication__DisableAuthentication: "true"
-      Features__LeadsModule: "true"
       Features__MiniAppsExternalOrigins: "false"
       Features__BiChatScaffold: "true"
       MiniApps__AllowedOrigins__0: http://localhost:7001
@@ -19,6 +17,22 @@ services:
     depends_on:
       - webapi
 
+  dbdeploy:
+    image: mcr.microsoft.com/dotnet/nightly/sdk:10.0
+    container_name: magalcom-dbdeploy
+    working_dir: /workspace
+    entrypoint:
+      - /bin/bash
+      - /workspace/deploy/docker/sql/publish-local.sh
+    environment:
+      TARGET_CONNECTION_STRING: Server=sqlserver,1433;Database=MagalcomCrm;User ID=sa;Password=Your_strong_password123;TrustServerCertificate=True;Encrypt=False
+    volumes:
+      - ../..:/workspace
+    depends_on:
+      sqlserver:
+        condition: service_started
+    restart: "no"
+
   webapi:
     build:
       context: ../..
@@ -26,22 +40,16 @@ services:
     container_name: magalcom-webapi
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      Authentication__DisableAuthentication: "true"
-      DataAccess__Provider: InMemory
+      DataAccess__Provider: SqlServer
+      DataAccess__ConnectionString: Server=sqlserver,1433;Database=MagalcomCrm;User ID=sa;Password=Your_strong_password123;TrustServerCertificate=True;Encrypt=False
       Cors__AllowedOrigins__0: http://localhost:7001
-      Features__LeadsModule: "true"
       Features__MiniAppsExternalOrigins: "false"
       Features__BiChatScaffold: "true"
-      MiniApps__Items__0__Id: hello-mini
-      MiniApps__Items__0__Title: Hello Mini App
-      MiniApps__Items__0__Route: /mini-apps/hello
-      MiniApps__Items__0__Url: http://localhost:7001/miniapps/hello/index.html
-      MiniApps__Items__0__Origin: http://localhost:7001
-      MiniApps__Items__0__Enabled: "true"
     ports:
       - "7002:8080"
     depends_on:
-      - sqlserver
+      dbdeploy:
+        condition: service_completed_successfully
 
   backend:
     build:
@@ -50,11 +58,15 @@ services:
     container_name: magalcom-backend
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      DataAccess__Provider: InMemory
+      DataAccess__Provider: SqlServer
+      DataAccess__ConnectionString: Server=sqlserver,1433;Database=MagalcomCrm;User ID=sa;Password=Your_strong_password123;TrustServerCertificate=True;Encrypt=False
     ports:
       - "7003:8080"
     depends_on:
-      - webapi
+      dbdeploy:
+        condition: service_completed_successfully
+      webapi:
+        condition: service_started
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Magalcom Deployment"
+  short_description: "Package and version IIS and Docker deployments"
+  default_prompt: "Use $magalcom-deployment to prepare both deployment bundles, enforce versioning, and update the repo deployment workflow."

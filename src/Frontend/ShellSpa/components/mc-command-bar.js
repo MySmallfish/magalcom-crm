@@ -27,12 +27,32 @@ export class McCommandBar extends HTMLElement {
     for (const command of this.#commands) {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = command.label;
       button.className = "command-btn";
+      button.disabled = Boolean(command.disabled);
+
+      const label = document.createElement("span");
+      label.textContent = command.label;
+
+      if (command.icon) {
+        const icon = document.createElement("span");
+        icon.textContent = command.icon;
+        button.appendChild(icon);
+      }
+
+      button.appendChild(label);
+
+      if (command.description) {
+        button.title = command.description;
+      }
+
       button.addEventListener("click", () => {
         this.dispatchEvent(
           new CustomEvent("command", {
-            detail: { name: command.name, payload: command.payload || null },
+            detail: {
+              name: command.name,
+              payload: command.payload || null,
+              metadata: command.metadata || {}
+            },
             bubbles: true,
             composed: true
           })

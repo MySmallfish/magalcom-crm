@@ -2,6 +2,7 @@ import { loadTemplate } from "../core/template-loader.js";
 
 export class McSideMenu extends HTMLElement {
   #items = [];
+  #activeRoute = "/";
 
   constructor() {
     super();
@@ -15,6 +16,11 @@ export class McSideMenu extends HTMLElement {
 
   get items() {
     return this.#items;
+  }
+
+  set activeRoute(value) {
+    this.#activeRoute = value || "/";
+    this.render();
   }
 
   async connectedCallback() {
@@ -32,6 +38,10 @@ export class McSideMenu extends HTMLElement {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "menu-item";
+      if (item.route === this.#activeRoute) {
+        button.classList.add("active");
+      }
+
       button.textContent = item.title;
       button.addEventListener("click", () => {
         this.dispatchEvent(

@@ -1,3 +1,10 @@
+import {
+  createShellContextMessage,
+  createShellEventMessage,
+  isMiniAppCommandMessage,
+  ShellEventNames
+} from "./contracts.js";
+
 export function createMiniAppBridge(eventBus, commandRegistry, allowedOrigins) {
   const originSet = new Set(allowedOrigins || []);
 
@@ -7,15 +14,23 @@ export function createMiniAppBridge(eventBus, commandRegistry, allowedOrigins) {
     }
 
     const message = event.data;
-    if (!message || message.type !== "magalcom.miniapp.command" || message.version !== "v1") {
+    if (!isMiniAppCommandMessage(message)) {
       return;
     }
 
     try {
-      await commandRegistry.execute(message.command, message.payload);
-      eventBus.publish("miniapp.command.executed", message);
+      await commandRegistry.execute({
+        name: message.command,
+        payload: message.payload,
+        metadata: {
+          source: "mini-app",
+          origin: event.origin
+        }
+      });
+
+      eventBus.publish(ShellEventNames.MiniAppCommandExecuted, message);
     } catch (error) {
-      eventBus.publish("miniapp.command.failed", {
+      eventBus.publish(ShellEventNames.MiniAppCommandFailed, {
         message,
         error: String(error)
       });
@@ -33,29 +48,16 @@ export function createMiniAppBridge(eventBus, commandRegistry, allowedOrigins) {
         throw new Error(`Origin is not allowlisted: ${targetOrigin}`);
       }
 
-      iframe.contentWindow?.postMessage(
-        {
-          type: "magalcom.shell.context",
-          version: "v1",
-          ...contextPayload
-        },
-        targetOrigin
-      );
+      const message = createShellContextMessage(contextPayload);
+      iframe.contentWindow?.postMessage(message, targetOrigin);
     },
     sendEvent(iframe, targetOrigin, eventType, payload) {
       if (!originSet.has(targetOrigin)) {
         throw new Error(`Origin is not allowlisted: ${targetOrigin}`);
       }
 
-      iframe.contentWindow?.postMessage(
-        {
-          type: "magalcom.shell.event",
-          version: "v1",
-          eventType,
-          payload
-        },
-        targetOrigin
-      );
+      const message = createShellEventMessage(eventType, payload);
+      iframe.contentWindow?.postMessage(message, targetOrigin);
     }
   };
 }

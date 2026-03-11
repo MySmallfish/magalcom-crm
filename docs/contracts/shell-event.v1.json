@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magalcom.shell.event.v1",
+  "title": "magalcom.shell.event.v1",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "eventType"
+  ],
+  "properties": {
+    "type": {
+      "const": "magalcom.shell.event"
+    },
+    "version": {
+      "const": "v1"
+    },
+    "eventType": {
+      "type": "string"
+    },
+    "payload": {}
+  },
+  "additionalProperties": false
+}

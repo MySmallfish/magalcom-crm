@@ -6,21 +6,31 @@ const shellMachine = createMachine({
   context: {
     user: null,
     route: "/",
+    routeQuery: {},
     sitemap: [],
     miniApps: [],
+    notifications: [],
+    activeMiniAppId: null,
     error: null
+  },
+  on: {
+    NAVIGATE: {
+      actions: assign({
+        route: ({ event }) => event.route,
+        routeQuery: ({ event }) => event.query ?? {}
+      })
+    }
   },
   states: {
     boot: {
       on: {
-        AUTH_REQUIRED: "authenticating",
-        AUTH_DISABLED: "ready"
+        AUTH_REQUIRED: "authenticating"
       }
     },
     authenticating: {
       on: {
         AUTH_SUCCESS: {
-          target: "ready",
+          target: "sessionLoading",
           actions: assign({ user: ({ event }) => event.user, error: null })
         },
         AUTH_FAILURE: {
@@ -29,23 +39,65 @@ const shellMachine = createMachine({
         }
       }
     },
+    sessionLoading: {
+      on: {
+        SESSION_READY: {
+          target: "ready",
+          actions: assign({
+            user: ({ event, context }) => event.user ?? context.user,
+            sitemap: ({ event }) => event.sitemap ?? [],
+            miniApps: ({ event }) => event.miniApps ?? [],
+            error: null
+          })
+        },
+        SESSION_FAILED: {
+          target: "error",
+          actions: assign({ error: ({ event }) => event.error })
+        }
+      }
+    },
     ready: {
       on: {
-        NAVIGATE: {
-          actions: assign({ route: ({ event }) => event.route })
-        },
         SITEMAP_LOADED: {
           actions: assign({ sitemap: ({ event }) => event.sitemap })
         },
         MINI_APPS_LOADED: {
           actions: assign({ miniApps: ({ event }) => event.miniApps })
         },
+        ACTIVE_MINI_APP_CHANGED: {
+          actions: assign({ activeMiniAppId: ({ event }) => event.miniAppId ?? null })
+        },
+        NOTIFICATION_ADDED: {
+          actions: assign({
+            notifications: ({ context, event }) => [
+              ...context.notifications,
+              {
+                id: event.id || crypto.randomUUID(),
+                level: event.level || "info",
+                message: event.message
+              }
+            ]
+          })
+        },
+        NOTIFICATION_DISMISSED: {
+          actions: assign({
+            notifications: ({ context, event }) => context.notifications.filter((item) => item.id !== event.id)
+          })
+        },
         SET_USER: {
           actions: assign({ user: ({ event }) => event.user })
         },
         LOGOUT: {
           target: "boot",
-          actions: assign({ user: null, route: "/", sitemap: [], miniApps: [] })
+          actions: assign({
+            user: null,
+            route: "/",
+            routeQuery: {},
+            sitemap: [],
+            miniApps: [],
+            notifications: [],
+            activeMiniAppId: null
+          })
         }
       }
     },

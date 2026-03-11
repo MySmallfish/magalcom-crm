@@ -1,7 +1,10 @@
 # SQL Bootstrap Notes
 
-This folder is reserved for SQL scripts that will be introduced when switching `DataAccess:Provider` to `SqlServer`.
+The source-controlled SQL Server database project lives in `src/Database/Magalcom.Crm.Database.sqlproj`.
+
+This folder contains local deployment helpers for Docker-based development.
 
 Conventions:
-- Reads from PascalCase views with `View` suffix.
-- Writes through business-named stored procedures (for example `AddLead`, `SaveLead`, `DeleteLead`).
+- Reads come from source-controlled views such as `crm.ProjectView` and `crm.FormulaView`.
+- Writes go through business-named stored procedures such as `crm.SaveProject` and `crm.SaveFormula`.
+- The local compose stack publishes the dacpac by running `deploy/docker/sql/publish-local.sh` before `WebApi` and `Backend` start.

@@ -1,35 +1,117 @@
 <style>
+  :host {
+    display: block;
+  }
+
   .profile {
     background: #ffffff;
     border: 1px solid #d8e0ea;
-    border-radius: 0.8rem;
-    padding: 1rem;
-    max-width: 720px;
+    border-radius: 1rem;
+    padding: 1.1rem 1.2rem;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .identity-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .field {
+    display: grid;
+    gap: 0.35rem;
   }
 
   .label {
     color: #5d6b7c;
     font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .value {
-    margin-bottom: 1rem;
     font-weight: 600;
+    color: #17314a;
+    word-break: break-word;
+  }
+
+  .preferences {
+    display: grid;
+    gap: 0.55rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5edf5;
+  }
+
+  select {
+    border: 1px solid #c7d4e0;
+    border-radius: 0.65rem;
+    background: #ffffff;
+    padding: 0.65rem 0.8rem;
+    min-width: 220px;
+    max-width: 320px;
+  }
+
+  .help {
+    color: #5d6b7c;
+    font-size: 0.85rem;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .logout {
+    border: 1px solid #d7c4c4;
+    border-radius: 0.7rem;
+    background: #fff7f7;
+    color: #8b2d2d;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  :host([dir="rtl"]) .profile {
+    direction: rtl;
+  }
+
+  :host([dir="rtl"]) .actions {
+    justify-content: flex-end;
   }
 </style>
 
 <section class="profile">
-  <h2>Profile</h2>
+  <div class="identity-grid">
+    <div class="field">
+      <div class="label" data-label-name>Display Name</div>
+      <div class="value" data-profile-name></div>
+    </div>
 
-  <div class="label">Display Name</div>
-  <div class="value" data-profile-name></div>
+    <div class="field">
+      <div class="label" data-label-email>Email</div>
+      <div class="value" data-profile-email></div>
+    </div>
 
-  <div class="label">Email</div>
-  <div class="value" data-profile-email></div>
+    <div class="field">
+      <div class="label" data-label-subject>Subject ID</div>
+      <div class="value" data-profile-subject></div>
+    </div>
 
-  <div class="label">Subject ID</div>
-  <div class="value" data-profile-subject></div>
+    <div class="field">
+      <div class="label" data-label-roles>Roles</div>
+      <div class="value" data-profile-roles></div>
+    </div>
+  </div>
 
-  <div class="label">Roles</div>
-  <div class="value" data-profile-roles></div>
+  <div class="preferences">
+    <div class="label" data-label-language>Language</div>
+    <select data-language-select></select>
+    <div class="help" data-language-help></div>
+  </div>
+
+  <div class="actions">
+    <button class="logout" type="button" data-logout-button>Logout</button>
+  </div>
 </section>

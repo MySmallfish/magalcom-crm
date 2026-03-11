@@ -5,6 +5,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
 
+var shellTenantId = builder.Configuration["Shell:Authentication:Entra:TenantId"];
+var shellSpaClientId = builder.Configuration["Shell:Authentication:Entra:SpaClientId"];
+var shellScope = builder.Configuration["Shell:Authentication:Entra:Scope"];
+if (!IsConfigured(shellTenantId) || !IsConfigured(shellSpaClientId) || !IsConfigured(shellScope))
+{
+    throw new InvalidOperationException("Shell:Authentication:Entra:TenantId, SpaClientId, and Scope must be configured in appsettings.");
+}
+
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
@@ -45,15 +53,15 @@ app.MapGet("/shell/config", (IConfiguration configuration) =>
         environment = app.Environment.EnvironmentName,
         authentication = new
         {
-            mode = configuration["Shell:Authentication:Mode"] ?? "msal",
-            disableAuthentication = configuration.GetValue<bool>("Shell:Authentication:DisableAuthentication"),
+            mode = configuration["Shell:Authentication:Mode"] ?? "entra",
             tenantId = configuration["Shell:Authentication:Entra:TenantId"] ?? string.Empty,
             clientId = configuration["Shell:Authentication:Entra:SpaClientId"] ?? string.Empty,
-            scope = configuration["Shell:Authentication:Entra:Scope"] ?? string.Empty
+            scope = configuration["Shell:Authentication:Entra:Scope"] ?? string.Empty,
+            redirectUri = configuration["Shell:Authentication:Entra:RedirectUri"] ?? string.Empty,
+            postLogoutRedirectUri = configuration["Shell:Authentication:Entra:PostLogoutRedirectUri"] ?? string.Empty
         },
         features = new
         {
-            leadsModule = configuration.GetValue("Features:LeadsModule", true),
             miniAppsExternalOrigins = configuration.GetValue<bool>("Features:MiniAppsExternalOrigins"),
             biChatScaffold = configuration.GetValue("Features:BiChatScaffold", true)
         },
@@ -73,3 +81,8 @@ app.MapFallback(async context =>
 });
 
 app.Run();
+
+static bool IsConfigured(string? value)
+{
+    return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase);
+}

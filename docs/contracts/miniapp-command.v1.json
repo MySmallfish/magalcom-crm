@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "magalcom.miniapp.command.v1",
+  "title": "magalcom.miniapp.command.v1",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "command"
+  ],
+  "properties": {
+    "type": {
+      "const": "magalcom.miniapp.command"
+    },
+    "version": {
+      "const": "v1"
+    },
+    "command": {
+      "type": "string"
+    },
+    "payload": {}
+  },
+  "additionalProperties": false
+}

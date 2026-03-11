@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.Build.Sql/2.1.0">
+  <PropertyGroup>
+    <Name>Magalcom.Crm.Database</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <EnableDefaultSqlItems>false</EnableDefaultSqlItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Build Include="Schemas/**/*.sql" />
+    <Build Include="Tables/**/*.sql" />
+    <Build Include="Views/**/*.sql" />
+    <Build Include="StoredProcedures/**/*.sql" />
+    <Build Remove="Post-Deployment/**/*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PostDeploy Include="Post-Deployment/PostDeployment.sql" />
+    <None Include="Post-Deployment/Seed.ReferenceData.sql" />
+  </ItemGroup>
+</Project>

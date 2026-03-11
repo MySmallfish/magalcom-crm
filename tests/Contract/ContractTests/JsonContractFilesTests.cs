@@ -7,6 +7,8 @@ public sealed class JsonContractFilesTests
     [Theory]
     [InlineData("docs/contracts/shell-context.v1.json", "magalcom.shell.context.v1")]
     [InlineData("docs/contracts/sitemap.v1.json", "magalcom.sitemap.v1")]
+    [InlineData("docs/contracts/shell-event.v1.json", "magalcom.shell.event.v1")]
+    [InlineData("docs/contracts/miniapp-command.v1.json", "magalcom.miniapp.command.v1")]
     public void ContractFile_ShouldContainSchemaId(string path, string expectedId)
     {
         var root = ResolveRepositoryRoot();

@@ -22,7 +22,9 @@ coverage/
 # Node
 node_modules/
 .playwright-cli/
-.codex/
+.codex/*
+!.codex/skills/
+!.codex/skills/**
 
 # OS files
 .DS_Store

@@ -1,6 +1,7 @@
 <style>
   :host {
     display: block;
+    direction: inherit;
   }
 
   .menu {
@@ -15,13 +16,24 @@
     color: #1a2a3a;
     border-radius: 0.5rem;
     padding: 0.65rem 0.8rem;
-    text-align: left;
+    text-align: start;
     cursor: pointer;
   }
 
   .menu-item:hover {
     border-color: #067d68;
     color: #025547;
+  }
+
+  .menu-item.active {
+    border-color: #067d68;
+    background: #e7f7f3;
+    color: #025547;
+    font-weight: 600;
+  }
+
+  :host([dir="rtl"]) .menu-item {
+    text-align: right;
   }
 </style>
 

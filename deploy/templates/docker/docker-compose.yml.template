@@ -1,0 +1,50 @@
+name: magalcom-crm
+
+services:
+  webapp:
+    image: __WEBAPP_IMAGE__
+    restart: unless-stopped
+    ports:
+      - "${WEBAPP_HOST_PORT:-7001}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Shell__ApiBaseUrl: ${PUBLIC_WEBAPI_URL}
+      Shell__Authentication__Mode: entra
+      Shell__Authentication__Entra__TenantId: ${ENTRA_TENANT_ID}
+      Shell__Authentication__Entra__SpaClientId: ${ENTRA_SPA_CLIENT_ID}
+      Shell__Authentication__Entra__Scope: api://${ENTRA_API_CLIENT_ID}/access_as_user
+      Shell__Authentication__Entra__RedirectUri: ${PUBLIC_WEBAPP_URL}/
+      Shell__Authentication__Entra__PostLogoutRedirectUri: ${PUBLIC_WEBAPP_URL}/
+      MiniApps__AllowedOrigins__0: ${PUBLIC_WEBAPP_URL}
+
+  webapi:
+    image: __WEBAPI_IMAGE__
+    restart: unless-stopped
+    ports:
+      - "${WEBAPI_HOST_PORT:-7002}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Authentication__Entra__TenantId: ${ENTRA_TENANT_ID}
+      Authentication__Entra__ApiClientId: ${ENTRA_API_CLIENT_ID}
+      Authentication__Entra__Audience: api://${ENTRA_API_CLIENT_ID}
+      Cors__AllowedOrigins__0: ${PUBLIC_WEBAPP_URL}
+      DataAccess__Provider: SqlServer
+      DataAccess__ConnectionString: ${SQL_CONNECTION_STRING}
+      ServiceBus__ConnectionString: ${SERVICEBUS_CONNECTION_STRING}
+      ServiceBus__CommandTopic: crm.commands
+      ServiceBus__EventTopic: crm.events
+      ServiceBus__JobsQueue: crm.jobs
+
+  backend:
+    image: __BACKEND_IMAGE__
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_HOST_PORT:-7003}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      DataAccess__Provider: SqlServer
+      DataAccess__ConnectionString: ${SQL_CONNECTION_STRING}
+      ServiceBus__ConnectionString: ${SERVICEBUS_CONNECTION_STRING}
+      ServiceBus__CommandTopic: crm.commands
+      ServiceBus__EventTopic: crm.events
+      ServiceBus__JobsQueue: crm.jobs

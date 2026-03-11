@@ -46,7 +46,6 @@
         "featureFlags": {
           "type": "object",
           "properties": {
-            "leadsModule": { "type": "boolean" },
             "miniAppsExternalOrigins": { "type": "boolean" },
             "biChatScaffold": { "type": "boolean" }
           },
