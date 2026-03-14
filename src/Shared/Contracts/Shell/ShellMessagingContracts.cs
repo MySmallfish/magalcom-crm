@@ -20,6 +20,7 @@ public static class ShellCommandNames
     public const string Notify = "shell.notify";
     public const string OpenMiniApp = "miniapp.open";
     public const string SetPageHeader = "shell.header.set";
+    public const string ExecuteSqlQuery = "miniapp.sql.query.execute";
 }
 
 public static class ShellEventNames
@@ -28,6 +29,8 @@ public static class ShellEventNames
     public const string RouteChanged = "shell.route.changed";
     public const string MiniAppCommandExecuted = "miniapp.command.executed";
     public const string MiniAppCommandFailed = "miniapp.command.failed";
+    public const string MiniAppSqlQueryResult = "miniapp.sql.query.result";
+    public const string MiniAppSqlQueryFailed = "miniapp.sql.query.failed";
     public const string CommandExecuting = "command.executing";
     public const string CommandExecuted = "command.executed";
     public const string CommandFailed = "command.failed";

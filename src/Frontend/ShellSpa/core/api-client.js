@@ -21,7 +21,22 @@ export class ApiClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`API ${response.status}: ${text}`);
+
+      let payload = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch {
+        // Ignore payload parsing failures for non-json responses.
+      }
+
+      const message = typeof payload === "object" && payload !== null && "message" in payload
+        ? payload.message
+        : text;
+
+      const error = new Error(`API ${response.status}: ${message || "Request failed"}`);
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
     }
 
     if (response.status === 204) {
@@ -41,5 +56,15 @@ export class ApiClient {
 
   getMiniApps() {
     return this.#request("/api/v1/miniapps");
+  }
+
+  executeSqlQuery(sql, writeConsent = false) {
+    return this.#request("/api/v1/admin/sql/query", {
+      method: "POST",
+      body: JSON.stringify({
+        sql,
+        writeConsent
+      })
+    });
   }
 }

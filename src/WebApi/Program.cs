@@ -117,12 +117,14 @@ if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddScoped<ILeadDataService, SqlServerLeadDataService>();
     builder.Services.AddScoped<IProjectDataService, SqlServerProjectDataService>();
     builder.Services.AddScoped<IFormulaDataService, SqlServerFormulaDataService>();
+    builder.Services.AddScoped<ISqlQueryService, SqlServerSqlQueryService>();
 }
 else
 {
     builder.Services.AddSingleton<ILeadDataService, InMemoryLeadDataService>();
     builder.Services.AddSingleton<IProjectDataService, InMemoryProjectDataService>();
     builder.Services.AddSingleton<IFormulaDataService, InMemoryFormulaDataService>();
+    builder.Services.AddSingleton<ISqlQueryService, InMemorySqlQueryService>();
 }
 
 builder.Services.AddSingleton<InMemoryMessageTransport>();
@@ -300,6 +302,35 @@ admin.MapPut("/formulas/{id:guid}", async (Guid id, UpdateFormulaRequest request
 {
     var updated = await service.SaveFormulaAsync(id, request, cancellationToken);
     return updated is null ? Results.NotFound() : Results.Ok(updated);
+});
+
+admin.MapPost("/sql/query", async (SqlQueryRequest request, ISqlQueryService service, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Sql))
+    {
+        return Results.BadRequest("SQL is required.");
+    }
+
+    SqlQueryResult response;
+    try
+    {
+        response = await service.ExecuteAsync(request, cancellationToken);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+
+    if (response.RequiresWriteConsent)
+    {
+        return Results.Conflict(response);
+    }
+
+    return Results.Ok(response);
 });
 
 static LeadOwnerDto ResolveLeadActor(ClaimsPrincipal user)

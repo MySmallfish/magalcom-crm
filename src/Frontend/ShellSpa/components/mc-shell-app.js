@@ -521,6 +521,63 @@ export class McShellApp extends HTMLElement {
         )
       }
     );
+
+    this.#commandRegistry.register(ShellCommandNames.ExecuteSqlQuery, async ({ requestId, sql, writeConsent }) => {
+      const roles = this.#state?.getSnapshot().context.user?.roles || [];
+      const isAdmin = roles.some((item) => String(item).toLowerCase() === "admin");
+      if (!isAdmin)
+      {
+        const error = "This command is only available to users with the Admin role.";
+        this.#eventBus.publish(ShellEventNames.MiniAppSqlQueryFailed, {
+          requestId,
+          error
+        });
+        throw new Error(error);
+      }
+
+      try
+      {
+        const result = await this.#apiClient.executeSqlQuery(sql, Boolean(writeConsent));
+        if (result?.requiresWriteConsent)
+        {
+          this.#eventBus.publish(ShellEventNames.MiniAppSqlQueryResult, {
+            requestId,
+            result
+          });
+          return result;
+        }
+
+        this.#eventBus.publish(ShellEventNames.MiniAppSqlQueryResult, {
+          requestId,
+          result
+        });
+        return result;
+      }
+      catch (error)
+      {
+        if (
+          error &&
+          error.status === 409 &&
+          typeof error.payload === "object" &&
+          error.payload !== null &&
+          "requiresWriteConsent" in error.payload
+        )
+        {
+          this.#eventBus.publish(ShellEventNames.MiniAppSqlQueryResult, {
+            requestId,
+            result: error.payload
+          });
+          return error.payload;
+        }
+
+        const message = error?.message || String(error);
+        this.#eventBus.publish(ShellEventNames.MiniAppSqlQueryFailed, {
+          requestId,
+          error: message
+        });
+        throw error;
+      }
+    });
   }
 
   #registerPlugins() {

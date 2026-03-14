@@ -12,7 +12,8 @@ export const ShellCommandNames = Object.freeze({
   Logout: "auth.logout",
   Notify: "shell.notify",
   OpenMiniApp: "miniapp.open",
-  SetPageHeader: "shell.header.set"
+  SetPageHeader: "shell.header.set",
+  ExecuteSqlQuery: "miniapp.sql.query.execute"
 });
 
 export const ShellEventNames = Object.freeze({
@@ -20,6 +21,8 @@ export const ShellEventNames = Object.freeze({
   RouteChanged: "shell.route.changed",
   MiniAppCommandExecuted: "miniapp.command.executed",
   MiniAppCommandFailed: "miniapp.command.failed",
+  MiniAppSqlQueryResult: "miniapp.sql.query.result",
+  MiniAppSqlQueryFailed: "miniapp.sql.query.failed",
   CommandExecuting: "command.executing",
   CommandExecuted: "command.executed",
   CommandFailed: "command.failed"
