@@ -134,13 +134,38 @@ builder.Services.AddSingleton<IBackgroundJobQueue>(sp => sp.GetRequiredService<I
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors("ShellSpa");
+app.UseExceptionHandler(handler =>
+{
+    handler.Run(async context =>
+    {
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("Magalcom.Crm.WebApi.Exceptions");
+
+        if (exceptionFeature?.Error is not null)
+        {
+            logger.LogError(
+                exceptionFeature.Error,
+                "Unhandled exception for {Method} {Path}.",
+                context.Request.Method,
+                context.Request.Path);
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+
+        await Results.Problem(
+            statusCode: StatusCodes.Status500InternalServerError,
+            title: "Server error",
+            detail: app.Environment.IsDevelopment()
+                ? exceptionFeature?.Error.Message
+                : "An unexpected server error occurred.")
+            .ExecuteAsync(context);
+    });
+});
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -151,29 +176,28 @@ app.MapHub<UpdatesHub>("/hubs/updates").RequireAuthorization("CrmUser");
 var api = app.MapGroup("/api/v1");
 api.RequireAuthorization("CrmUser");
 
-api.MapGet("/me", (ClaimsPrincipal user) =>
+api.MapGet("/me", (HttpContext httpContext) =>
 {
-    var roles = user.Claims
-        .Where(c => c.Type is "roles" or ClaimTypes.Role)
-        .Select(c => c.Value)
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToArray();
+    try
+    {
+        return Results.Ok(BuildUserContext(httpContext.User));
+    }
+    catch (Exception exception)
+    {
+        var logger = httpContext.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("Magalcom.Crm.WebApi.MeEndpoint");
 
-    var subjectId = user.FindFirstValue("oid")
-                    ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
-                    ?? "unknown";
+        logger.LogError(
+            exception,
+            "Failed to build /api/v1/me response. Claim types: {ClaimTypes}",
+            httpContext.User.Claims.Select(claim => claim.Type).Distinct().ToArray());
 
-    var displayName = user.Identity?.Name
-                      ?? user.FindFirstValue("name")
-                      ?? string.Empty;
-
-    var email = user.FindFirstValue("preferred_username")
-                ?? user.FindFirstValue("upn")
-                ?? user.FindFirstValue("unique_name")
-                ?? user.FindFirstValue(ClaimTypes.Email)
-                ?? string.Empty;
-
-    return Results.Ok(new UserContextDto(subjectId, displayName, email, roles));
+        return Results.Problem(
+            statusCode: StatusCodes.Status500InternalServerError,
+            title: "Failed to build user context",
+            detail: app.Environment.IsDevelopment() ? exception.Message : null);
+    }
 });
 
 api.MapGet("/sitemap", (ClaimsPrincipal user, IOptions<ShellNavigationOptions> navigationOptions, IOptions<MiniAppsOptions> miniAppsOptions) =>
@@ -355,6 +379,32 @@ app.Run();
 static bool IsConfigured(string? value)
 {
     return !string.IsNullOrWhiteSpace(value) && !value.StartsWith("REPLACE_WITH_", StringComparison.OrdinalIgnoreCase);
+}
+
+static UserContextDto BuildUserContext(ClaimsPrincipal user)
+{
+    var roles = user.Claims
+        .Where(c => c.Type is "roles" or ClaimTypes.Role)
+        .Select(c => c.Value)
+        .Where(value => !string.IsNullOrWhiteSpace(value))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    var subjectId = user.FindFirstValue("oid")
+                    ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? "unknown";
+
+    var displayName = user.Identity?.Name
+                      ?? user.FindFirstValue("name")
+                      ?? string.Empty;
+
+    var email = user.FindFirstValue("preferred_username")
+                ?? user.FindFirstValue("upn")
+                ?? user.FindFirstValue("unique_name")
+                ?? user.FindFirstValue(ClaimTypes.Email)
+                ?? string.Empty;
+
+    return new UserContextDto(subjectId, displayName, email, roles);
 }
 
 static SitemapItemDto[] BuildSitemap(
