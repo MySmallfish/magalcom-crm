@@ -1,5 +1,35 @@
 import { loadTemplate } from "../core/template-loader.js";
 
+const DEFAULT_SANDBOX_TOKENS = ["allow-scripts", "allow-forms", "allow-downloads"];
+
+function resolveMiniAppOrigin(miniApp) {
+  if (!miniApp) {
+    return null;
+  }
+
+  if (miniApp.origin) {
+    return miniApp.origin;
+  }
+
+  try {
+    return new URL(miniApp.url, window.location.href).origin;
+  } catch {
+    return null;
+  }
+}
+
+function getSandboxPolicy(miniApp) {
+  const sandboxTokens = [...DEFAULT_SANDBOX_TOKENS];
+  const miniAppOrigin = resolveMiniAppOrigin(miniApp);
+
+  // Same-origin mini-apps need a real origin so ES modules and API calls do not downgrade to `null`.
+  if (miniAppOrigin === window.location.origin) {
+    sandboxTokens.push("allow-same-origin");
+  }
+
+  return sandboxTokens.join(" ");
+}
+
 export class McMiniAppFrame extends HTMLElement {
   #miniApp = null;
 
@@ -24,17 +54,18 @@ export class McMiniAppFrame extends HTMLElement {
   async render() {
     const template = await loadTemplate("/templates/miniapp-frame.html");
     this.shadowRoot.innerHTML = template;
+    this.toggleAttribute("fullscreen", this.#miniApp?.useFullScreenLayout === true);
 
-    const title = this.shadowRoot.querySelector("[data-miniapp-title]");
     const frame = this.shadowRoot.querySelector("iframe");
 
     if (!this.#miniApp) {
-      title.textContent = "No mini app selected";
+      frame.title = "No mini app selected";
       frame.src = "about:blank";
       return;
     }
 
-    title.textContent = this.#miniApp.title;
+    frame.title = this.#miniApp.title;
+    frame.setAttribute("sandbox", getSandboxPolicy(this.#miniApp));
     frame.src = this.#miniApp.url;
 
     frame.addEventListener("load", () => {

@@ -13,8 +13,8 @@ public sealed class InMemoryLeadDataServiceTests
         var service = new InMemoryLeadDataService();
         var metadata = await service.GetMetadataAsync();
         var customer = metadata.Customers.First();
-        var detection = metadata.WorkTypes.First(item => item.Code == "DETECT");
-        var software = metadata.WorkTypes.First(item => item.Code == "SOFT");
+        var dataCenter = metadata.WorkTypes.First(item => item.Code == "DataCenter");
+        var communications = metadata.WorkTypes.First(item => item.Code == "Communications");
 
         var created = await service.AddLeadAsync(
             new CreateLeadRequest(
@@ -38,8 +38,8 @@ public sealed class InMemoryLeadDataServiceTests
                 null,
                 new[]
                 {
-                    new LeadAmountLineRequest(null, detection.Id, 150000m, "Detection package"),
-                    new LeadAmountLineRequest(null, software.Id, 50000m, "Software integration")
+                    new LeadAmountLineRequest(null, dataCenter.Id, 150000m, "Data center package"),
+                    new LeadAmountLineRequest(null, communications.Id, 50000m, "Communications integration")
                 }),
             Actor);
 
@@ -63,8 +63,8 @@ public sealed class InMemoryLeadDataServiceTests
         var service = new InMemoryLeadDataService();
         var metadata = await service.GetMetadataAsync();
         var current = (await service.GetLeadsAsync()).First();
-        var accessControl = metadata.WorkTypes.First(item => item.Code == "ACCESS");
-        var cctv = metadata.WorkTypes.First(item => item.Code == "CAMERA");
+        var security = metadata.WorkTypes.First(item => item.Code == "Security");
+        var safety = metadata.WorkTypes.First(item => item.Code == "Safety");
 
         var updated = await service.SaveLeadAsync(
             current.Id,
@@ -89,8 +89,8 @@ public sealed class InMemoryLeadDataServiceTests
                 260000m,
                 new[]
                 {
-                    new LeadAmountLineRequest(current.AmountLines.First().Id, accessControl.Id, 180000m, "Access control refresh"),
-                    new LeadAmountLineRequest(null, cctv.Id, 90000m, "Camera package")
+                    new LeadAmountLineRequest(current.AmountLines.First().Id, security.Id, 180000m, "Security refresh"),
+                    new LeadAmountLineRequest(null, safety.Id, 90000m, "Safety package")
                 }),
             Actor);
 

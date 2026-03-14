@@ -8,6 +8,8 @@
     "version",
     "correlationId",
     "environment",
+    "locale",
+    "direction",
     "accessToken",
     "user",
     "configuration"
@@ -25,6 +27,14 @@
     },
     "environment": {
       "type": "string"
+    },
+    "locale": {
+      "type": "string",
+      "enum": ["he", "en"]
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["rtl", "ltr"]
     },
     "accessToken": {
       "type": "string",

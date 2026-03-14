@@ -4,6 +4,7 @@
     <AssemblyName>Magalcom.Crm.WebApi</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-*" />
   </ItemGroup>
   <ItemGroup>

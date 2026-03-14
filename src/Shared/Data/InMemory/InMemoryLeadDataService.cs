@@ -191,10 +191,12 @@ public sealed class InMemoryLeadDataService : ILeadDataService
 
         var workTypes = new[]
         {
-            new WorkTypeDto(Guid.Parse("d1111111-1111-1111-1111-111111111111"), "DETECT", "Detection", 10, true),
-            new WorkTypeDto(Guid.Parse("d2222222-2222-2222-2222-222222222222"), "ACCESS", "Access Control", 20, true),
-            new WorkTypeDto(Guid.Parse("d3333333-3333-3333-3333-333333333333"), "CAMERA", "CCTV", 30, true),
-            new WorkTypeDto(Guid.Parse("d4444444-4444-4444-4444-444444444444"), "SOFT", "Software", 40, true)
+            new WorkTypeDto(Guid.Parse("d1111111-1111-1111-1111-111111111111"), "DataCenter", "Data Center", 10, true),
+            new WorkTypeDto(Guid.Parse("d2222222-2222-2222-2222-222222222222"), "Security", "Security", 20, true),
+            new WorkTypeDto(Guid.Parse("d3333333-3333-3333-3333-333333333333"), "Safety", "Safety", 30, true),
+            new WorkTypeDto(Guid.Parse("d4444444-4444-4444-4444-444444444444"), "Multimedia", "Multimedia", 40, true),
+            new WorkTypeDto(Guid.Parse("d5555555-5555-5555-5555-555555555555"), "Transport", "Transport", 50, true),
+            new WorkTypeDto(Guid.Parse("d6666666-6666-6666-6666-666666666666"), "Communications", "Communications", 60, true)
         };
 
         foreach (var workType in workTypes)
@@ -239,8 +241,8 @@ public sealed class InMemoryLeadDataService : ILeadDataService
             null,
             new[]
             {
-                new LeadAmountLineRequest(Guid.Parse("f1111111-1111-1111-1111-111111111111"), Guid.Parse("d1111111-1111-1111-1111-111111111111"), 45000m, "Fire panel and detectors"),
-                new LeadAmountLineRequest(Guid.Parse("f2222222-2222-2222-2222-222222222222"), Guid.Parse("d4444444-4444-4444-4444-444444444444"), 12000m, "Software integration")
+                new LeadAmountLineRequest(Guid.Parse("f1111111-1111-1111-1111-111111111111"), Guid.Parse("d1111111-1111-1111-1111-111111111111"), 45000m, "Data center infrastructure"),
+                new LeadAmountLineRequest(Guid.Parse("f2222222-2222-2222-2222-222222222222"), Guid.Parse("d6666666-6666-6666-6666-666666666666"), 12000m, "Communications integration")
             });
 
         var lead = BuildLead(

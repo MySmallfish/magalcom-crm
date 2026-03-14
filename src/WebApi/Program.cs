@@ -12,7 +12,9 @@ using Magalcom.Crm.Shared.Messaging;
 using Magalcom.Crm.WebApi.Configuration;
 using Magalcom.Crm.WebApi.Hubs;
 using Magalcom.Crm.WebApi.Infrastructure;
+using Magalcom.Crm.WebApi.Leads;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 
@@ -198,7 +200,7 @@ api.MapGet("/miniapps", (IOptions<MiniAppsOptions> options, ClaimsPrincipal user
     var items = options.Value.Items
         .Where(item => item.Enabled)
         .Where(item => item.RequiredRoles.Count == 0 || item.RequiredRoles.Any(role => roles.Contains(role)))
-        .Select(item => new MiniAppDescriptorDto(item.Id, item.Title, item.Route, item.Url, item.Origin, item.Enabled, item.RequiredRoles))
+        .Select(item => new MiniAppDescriptorDto(item.Id, item.Title, item.Route, item.Url, item.Origin, item.Enabled, item.UseFullScreenLayout, item.RequiredRoles))
         .ToArray();
 
     return Results.Ok(items);
@@ -209,6 +211,16 @@ api.MapGet("/leads/metadata", async (ILeadDataService service, CancellationToken
 
 api.MapGet("/leads", async (ILeadDataService service, CancellationToken cancellationToken) =>
     Results.Ok(await service.GetLeadsAsync(cancellationToken)));
+
+api.MapGet("/leads/export", async ([AsParameters] LeadExportQuery query, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    var leads = LeadExportWorkbookBuilder.ApplyQuery(await service.GetLeadsAsync(cancellationToken), query);
+    var workbookBytes = LeadExportWorkbookBuilder.BuildWorkbook(leads, query);
+    return Results.File(
+        workbookBytes,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        LeadExportWorkbookBuilder.BuildFileName(query));
+});
 
 api.MapGet("/leads/{id:guid}", async (Guid id, ILeadDataService service, CancellationToken cancellationToken) =>
 {

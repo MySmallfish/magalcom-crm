@@ -12,7 +12,7 @@ public sealed class ApiSurfaceDefinitionTests
     {
         var me = new UserContextDto("sub", "name", "email", ["Admin"]);
         var sitemap = new SitemapItemDto("home", "Home", "/", 1, "home", [], []);
-        var miniApp = new MiniAppDescriptorDto("m1", "Mini", "/mini", "https://mini", "https://mini", true, []);
+        var miniApp = new MiniAppDescriptorDto("m1", "Mini", "/mini", "https://mini", "https://mini", true, false, []);
         var lead = new LeadDto(
             Guid.NewGuid(),
             new LeadOwnerDto("sub", "name", "email"),
@@ -25,11 +25,11 @@ public sealed class ApiSurfaceDefinitionTests
             DateOnly.FromDateTime(DateTime.UtcNow),
             LeadOfferStatus.Open,
             null,
-            [new LeadAmountLineDto(Guid.NewGuid(), Guid.NewGuid(), "ACCESS", "Access Control", 100m, "Note")],
+            [new LeadAmountLineDto(Guid.NewGuid(), Guid.NewGuid(), "DataCenter", "Data Center", 100m, "Note")],
             new LeadMetricsDto(100m, 15m, 4.5m, 30m, 34.5m, 34.5m, 0m, 0m),
             false,
             [],
-            [new LeadWorkTypeTotalDto(Guid.NewGuid(), "ACCESS", "Access Control", 100m)],
+            [new LeadWorkTypeTotalDto(Guid.NewGuid(), "DataCenter", "Data Center", 100m)],
             [new LeadAuditEntryDto(DateTime.UtcNow, "name", "Created", "Lead created")],
             DateTime.UtcNow,
             DateTime.UtcNow);

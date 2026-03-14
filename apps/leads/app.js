@@ -15,20 +15,289 @@ const DEFAULT_FILTERS = {
   sortBy: "updatedAt"
 };
 
+const LocaleCodes = Object.freeze({
+  Hebrew: "he",
+  English: "en"
+});
+
+const StageValues = Object.freeze(["Before", "Approaching", "Sent"]);
+const OfferStatusValues = Object.freeze(["Open", "Win", "Lose", "Suspended", "Cancelled"]);
+
+const MessageTypes = Object.freeze({
+  ShellContext: "magalcom.shell.context",
+  MiniAppCommand: "magalcom.miniapp.command"
+});
+
+const MessageVersion = "v1";
+const AmountInputPattern = /^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/;
+const AmountInputPatternAttribute = "^(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d{1,2})?$";
+
+const HostCommandNames = Object.freeze({
+  SetPageHeader: "shell.header.set"
+});
+
+const DashboardStageColors = Object.freeze({
+  Before: "#8ea1c5",
+  Approaching: "#5573ad",
+  Sent: "#274884",
+  Unstaged: "#a3b3c1"
+});
+
+const DashboardStatusColors = Object.freeze({
+  Open: "#5573ad",
+  Win: "#274884",
+  Lose: "#b4423f",
+  Suspended: "#8ea1c5",
+  Cancelled: "#8597a6"
+});
+
+const DashboardWorkTypeColors = Object.freeze({
+  DataCenter: "#274884",
+  Security: "#19345f",
+  Safety: "#6d88b9",
+  Multimedia: "#4f69a1",
+  Transport: "#90a3c5",
+  Communications: "#3b5e9c"
+});
+
+const DashboardFallbackPalette = Object.freeze([
+  "#274884",
+  "#19345f",
+  "#4f69a1",
+  "#6d88b9",
+  "#90a3c5",
+  "#b3c0d9"
+]);
+
+const hostOrigin = resolveOrigin(document.referrer) || window.location.origin;
+let lastHeaderAnnouncement = "";
+
+const textCatalog = Object.freeze({
+  "app.title": { he: "ניהול לידים", en: "Leads Management" },
+  "view.dashboard": { he: "דשבורד", en: "Dashboard" },
+  "view.list": { he: "רשימת לידים", en: "Lead List" },
+  "view.newLead": { he: "ליד חדש", en: "New Lead" },
+  "view.editLead": { he: "עריכת ליד", en: "Edit Lead" },
+  "app.subtitle.dashboard": { he: "מבט מרוכז על פייפליין, תחזית וסיכונים פתוחים.", en: "A focused view of pipeline, forecast, and open risks." },
+  "app.subtitle.list": { he: "סינון, סקירה ותחזוקה שוטפת של כל הלידים הפעילים.", en: "Filter, review, and manage the active lead pipeline." },
+  "question.knows-customer-personally": { he: "מכירים את הלקוח באופן אישי?", en: "Know the customer personally?" },
+  "question.returning-customer": { he: "לקוח חוזר?", en: "Returning customer?" },
+  "question.involved-in-planning": { he: "מעורבים בתכנון הפרויקט?", en: "Involved in project planning?" },
+  "question.consultant-relationship": { he: "קשר טוב עם היועץ?", en: "Relationship with consultant?" },
+  "question.project-management-relationship": { he: "קשר חזק עם הנהלת הפרויקט?", en: "Strong relationship with project management?" },
+  "question.customer-under-price-list": { he: "הלקוח תחת מחירון?", en: "Customer under price list?" },
+  "WorkType.DataCenter": { he: "דאטה סנטר", en: "Data Center" },
+  "WorkType.Security": { he: "אבטחה", en: "Security" },
+  "WorkType.Safety": { he: "בטיחות", en: "Safety" },
+  "WorkType.Multimedia": { he: "מולטימדיה", en: "Multimedia" },
+  "WorkType.Transport": { he: "תחבורה", en: "Transport" },
+  "WorkType.Communications": { he: "תקשורת", en: "Communications" },
+  "form.header.newLeadSubtitle": { he: "מלאו פרטי לקוח, היקף, כשירות ותחזית כדי לפתוח ליד חדש.", en: "Add customer, scope, qualification, and forecast details to open a new lead." },
+  "form.header.editLeadSubtitle": { he: "עדכנו פרטי לקוח, היקף, כשירות ותחזית עבור הליד הקיים.", en: "Update customer, scope, qualification, and forecast details for this lead." },
+  "form.keyboardHint": { he: "אפשר להשתמש במקלדת כדי לעבור בין שדות, לבחור תשובות ולשמור עם Ctrl/Cmd + Enter.", en: "You can use your keyboard to move between fields, choose answers, and save with Ctrl/Cmd + Enter." },
+  "state.waitingEyebrow": { he: "מודול CRM משובץ", en: "Embedded CRM module" },
+  "state.waitingTitle": { he: "ממתינים להקשר מהמארח", en: "Waiting for host context" },
+  "state.waitingDescription": { he: "אפליקציית הלידים מתחילה רק אחרי שמעטפת ה-CRM שולחת את המשתמש, ההגדרות והטוקן הנוכחיים.", en: "The leads app only starts after the parent CRM posts the current user, configuration, and access token." },
+  "state.handshakeEyebrow": { he: "נדרש חיבור למעטפת", en: "Host handshake required" },
+  "state.handshakeTitle": { he: "הקשר ה-CRM לא התקבל", en: "CRM context was not received" },
+  "state.handshakeDescription": { he: "פתחו את המודול מתוך מעטפת ה-CRM כדי שה-iframe יקבל הודעת postMessage תקינה.", en: "Open this module from the CRM shell so the iframe can receive a valid postMessage payload." },
+  "state.loadFailedEyebrow": { he: "הטעינה נכשלה", en: "Load failed" },
+  "state.loadFailedTitle": { he: "לא ניתן היה לטעון את נתוני הלידים", en: "Leads data could not be loaded" },
+  "state.connectedAs": { he: "מחובר כ-{name}", en: "Connected as {name}" },
+  "state.loadingTitle": { he: "מסנכרנים את סביבת הלידים", en: "Syncing lead workspace" },
+  "state.loadingDescription": { he: "טוענים לקוחות, פרויקטים, סוגי עבודה והפייפליין הנוכחי מ-CRM API.", en: "Loading customers, projects, work types, and the current pipeline from the CRM API." },
+  "error.missingAccessToken": { he: "הקשר מהמארח חסר טוקן גישה.", en: "Host context is missing an access token." },
+  "error.requestFailedStatus": { he: "הבקשה נכשלה עם סטטוס {status}.", en: "Request failed with status {status}." },
+  "nav.dashboard": { he: "דשבורד", en: "Dashboard" },
+  "nav.list": { he: "רשימת לידים", en: "Lead List" },
+  "nav.newLead": { he: "ליד חדש", en: "New Lead" },
+  "common.dismiss": { he: "סגירה", en: "Dismiss" },
+  "common.cancel": { he: "ביטול", en: "Cancel" },
+  "common.close": { he: "סגירה", en: "Close" },
+  "common.all": { he: "הכל", en: "All" },
+  "common.notSet": { he: "לא הוגדר", en: "Not set" },
+  "common.noDueDate": { he: "ללא תאריך יעד", en: "No due date" },
+  "common.yes": { he: "כן", en: "Yes" },
+  "common.no": { he: "לא", en: "No" },
+  "common.open": { he: "פתיחה", en: "Open" },
+  "common.remove": { he: "הסרה", en: "Remove" },
+  "common.exporting": { he: "מייצא...", en: "Exporting..." },
+  "common.selectType": { he: "בחירת סוג", en: "Select type" },
+  "common.memoryOnly": { he: "בזיכרון בלבד", en: "memory only" },
+  "common.incomplete": { he: "לא הושלם", en: "Incomplete" },
+  "common.noData": { he: "עדיין אין נתונים להצגה.", en: "No data available yet." },
+  "common.noImmediateAction": { he: "אין כרגע לידים שדורשים טיפול מיידי.", en: "No leads currently require immediate action." },
+  "dashboard.openLeads": { he: "לידים פתוחים", en: "Open leads" },
+  "dashboard.pipelineAmount": { he: "סכום פייפליין", en: "Pipeline amount" },
+  "dashboard.weightedForecast": { he: "תחזית משוקללת", en: "Weighted forecast" },
+  "dashboard.perpetualValue": { he: "שווי חוזים מתמשכים", en: "Perpetual value" },
+  "dashboard.wins": { he: "זכיות", en: "Wins" },
+  "dashboard.highConfidence": { he: "תחזית בביטחון גבוה", en: "High-confidence forecast" },
+  "dashboard.averageChance": { he: "סיכוי ממוצע", en: "Average chance" },
+  "dashboard.atRiskExposure": { he: "חשיפה בסיכון", en: "At-risk exposure" },
+  "dashboard.pipelineByOwner": { he: "פייפליין לפי בעלים", en: "Pipeline by owner" },
+  "dashboard.stageMix": { he: "התפלגות שלבים", en: "Stage mix" },
+  "dashboard.topCustomers": { he: "לקוחות מובילים", en: "Top customers" },
+  "dashboard.workTypeConcentration": { he: "ריכוז לפי סוג עבודה", en: "Work type concentration" },
+  "dashboard.monthlyForecast": { he: "תחזית חודשית", en: "Monthly forecast" },
+  "dashboard.riskWidget": { he: "לידים בסיכון", en: "Risk widget" },
+  "dashboard.noStageData": { he: "עדיין אין נתוני שלבים.", en: "No stage data available yet." },
+  "dashboard.openFilteredList": { he: "פתיחת רשימה מסוננת", en: "Open filtered list" },
+  "dashboard.liveOverview": { he: "תמונת מצב חיה", en: "Live pipeline snapshot" },
+  "dashboard.snapshotTitle": { he: "{count} לידים פעילים אצל {customers} לקוחות", en: "{count} active pursuits across {customers} customers" },
+  "dashboard.snapshotDescription": { he: "תחזית משוקללת של {forecast} מתוך פייפליין כולל של {pipeline}, עם חלוקה לפי שלבים, סטטוסים וסוגי עבודה.", en: "Weighted forecast of {forecast} out of a total pipeline of {pipeline}, broken down by stages, statuses, and work types." },
+  "dashboard.dueSoon": { he: "יעד ב-30 הימים הקרובים", en: "Due in 30 days" },
+  "dashboard.overdue": { he: "עבר תאריך יעד", en: "Overdue" },
+  "dashboard.winRate": { he: "שיעור זכייה", en: "Win rate" },
+  "dashboard.forecastCoverage": { he: "כיסוי תחזית", en: "Forecast coverage" },
+  "dashboard.pipelineFunnel": { he: "משפך פייפליין", en: "Pipeline funnel" },
+  "dashboard.statusPortfolio": { he: "התפלגות סטטוסים", en: "Status portfolio" },
+  "dashboard.workTypePortfolio": { he: "תמהיל סוגי עבודה", en: "Work type portfolio" },
+  "dashboard.monthlyRunRate": { he: "תחזית לפי חודשים", en: "Monthly forecast run-rate" },
+  "dashboard.ownerLeaderboard": { he: "דירוג בעלי פייפליין", en: "Owner leaderboard" },
+  "dashboard.customerExposure": { he: "חשיפה לפי לקוח", en: "Customer exposure" },
+  "dashboard.portfolioHealth": { he: "בריאות הפורטפוליו", en: "Portfolio health" },
+  "dashboard.topOpportunity": { he: "הזדמנות מובילה", en: "Top opportunity" },
+  "dashboard.topCustomer": { he: "לקוח מוביל", en: "Top customer" },
+  "dashboard.topOwner": { he: "בעלים מוביל", en: "Top owner" },
+  "dashboard.emptySpotlight": { he: "עדיין אין מספיק נתונים להצגת מוקד.", en: "Not enough data yet to show a spotlight." },
+  "dashboard.exploreList": { he: "פתיחת הרשימה", en: "Open lead list" },
+  "dashboard.report": { he: "דוח", en: "Report" },
+  "dashboard.ofPipeline": { he: "מהפייפליין", en: "of pipeline" },
+  "dashboard.ofForecast": { he: "מהתחזית", en: "of forecast" },
+  "dashboard.leadsCount": { he: "{count} לידים", en: "{count} leads" },
+  "dashboard.customersCount": { he: "{count} לקוחות", en: "{count} customers" },
+  "dashboard.stageValueShare": { he: "חלק יחסי לפי סכום", en: "Value share by stage" },
+  "dashboard.valueMix": { he: "חלוקה לפי סכום", en: "Value mix" },
+  "dashboard.pipelinePressure": { he: "עומס טיפול", en: "Attention load" },
+  "dashboard.requiresAttention": { he: "דורש טיפול", en: "requires attention" },
+  "dashboard.highConfidenceShare": { he: "חלק התחזית בביטחון גבוה", en: "High-confidence share" },
+  "dashboard.perpetualShare": { he: "חלק חוזים מתמשכים", en: "Perpetual share" },
+  "dashboard.closedWinRate": { he: "זכיות מתוך סגירות", en: "Closed-win rate" },
+  "dashboard.riskShare": { he: "חלק מהפייפליין בסיכון", en: "Pipeline at risk" },
+  "list.search": { he: "חיפוש", en: "Search" },
+  "list.searchPlaceholder": { he: "חיפוש לקוח או פרויקט", en: "Search customer or project" },
+  "list.owner": { he: "בעלים", en: "Owner" },
+  "list.customer": { he: "לקוח", en: "Customer" },
+  "list.workType": { he: "סוג עבודה", en: "Work Type" },
+  "list.contractType": { he: "סוג חוזה", en: "Contract Type" },
+  "list.stage": { he: "שלב", en: "Stage" },
+  "list.offerStatus": { he: "סטטוס הצעה", en: "Offer Status" },
+  "list.dueFrom": { he: "תאריך יעד מ-", en: "Due from" },
+  "list.dueTo": { he: "תאריך יעד עד", en: "Due to" },
+  "list.amountMin": { he: "סכום מינימלי", en: "Amount min" },
+  "list.amountMax": { he: "סכום מקסימלי", en: "Amount max" },
+  "list.sortBy": { he: "מיון לפי", en: "Sort By" },
+  "list.resetFilters": { he: "איפוס מסננים", en: "Reset Filters" },
+  "list.export": { he: "ייצוא לאקסל", en: "Export to Excel" },
+  "list.resultsCount": { he: "{count} לידים תואמים", en: "{count} matching leads" },
+  "list.noResults": { he: "אין לידים שתואמים למסננים הנוכחיים.", en: "No leads match the current filter set." },
+  "list.contract.perpetual": { he: "מתמשך", en: "Perpetual" },
+  "list.contract.auction": { he: "מכרז / חד-פעמי", en: "Auction / One-time" },
+  "list.sort.updatedAt": { he: "עודכן לאחרונה", en: "Last Updated" },
+  "list.sort.dueDate": { he: "תאריך יעד", en: "Due Date" },
+  "list.sort.totalAmount": { he: "סכום כולל", en: "Total Amount" },
+  "list.sort.forecastAmount": { he: "תחזית", en: "Forecast Amount" },
+  "list.sort.chanceToWin": { he: "סיכויי זכייה", en: "Chance to Win" },
+  "table.customerProject": { he: "לקוח / פרויקט", en: "Customer / Project" },
+  "table.status": { he: "סטטוס", en: "Status" },
+  "table.total": { he: "סה\"כ", en: "Total" },
+  "table.forecast": { he: "תחזית", en: "Forecast" },
+  "table.chance": { he: "סיכוי", en: "Chance" },
+  "table.due": { he: "יעד", en: "Due" },
+  "table.updated": { he: "עודכן", en: "Updated" },
+  "toast.filtered": { he: "הרשימה סוננה לפי {label}.", en: "Filtered list by {label}." },
+  "toast.created": { he: "הליד נוצר בהצלחה.", en: "Lead created successfully." },
+  "toast.updated": { he: "הליד עודכן בהצלחה.", en: "Lead updated successfully." },
+  "validation.customerRequired": { he: "חובה לבחור לקוח.", en: "Customer is required." },
+  "validation.projectRequired": { he: "חובה להזין פרויקט.", en: "Project is required." },
+  "validation.amountLineWorkType": { he: "בשורת סכום {index} חובה לבחור סוג עבודה.", en: "Amount line {index} must include a work type." },
+  "validation.amountLineAmount": { he: "בשורת סכום {index} חובה להזין סכום חיובי.", en: "Amount line {index} must include a positive amount." },
+  "validation.amountLineAmountInvalid": { he: "בשורת סכום {index} יש להזין מספר תקין, למשל 1250000 או 1,250,000.", en: "Amount line {index} must be a valid number, for example 1250000 or 1,250,000." },
+  "validation.actualAwardedRequired": { he: "בסטטוס זכייה חובה להזין סכום זכייה בפועל.", en: "Actual awarded amount is required when the offer status is Win." },
+  "validation.actualAwardedInvalid": { he: "סכום הזכייה בפועל חייב להיות מספר תקין, למשל 1250000 או 1,250,000.", en: "Actual awarded amount must be a valid number, for example 1250000 or 1,250,000." },
+  "validation.summaryTitle": { he: "יש לתקן את השדות הבאים לפני השמירה:", en: "Fix these fields before saving:" },
+  "validation.summaryButton": { he: "{count} שגיאות", en: "{count} issues" },
+  "form.backToList": { he: "חזרה לרשימה", en: "Back to List" },
+  "form.saveLead": { he: "שמירת ליד", en: "Save Lead" },
+  "form.saving": { he: "שומר...", en: "Saving..." },
+  "form.businessContext": { he: "הקשר עסקי", en: "Business context" },
+  "form.customer": { he: "לקוח", en: "Customer" },
+  "form.selectCustomer": { he: "בחירת לקוח CRM", en: "Select CRM customer" },
+  "form.customerPlaceholder": { he: "התחילו להקליד שם לקוח", en: "Start typing a customer name" },
+  "form.project": { he: "פרויקט", en: "Project" },
+  "form.projectPlaceholder": { he: "שימוש בפרויקט קיים או יצירת חדש", en: "Reuse or create a project" },
+  "form.offerStatus": { he: "סטטוס הצעה", en: "Offer Status" },
+  "form.comments": { he: "הערות", en: "Comments" },
+  "form.commentsPlaceholder": { he: "תעדו הקשר, חסמים ופעולות המשך.", en: "Capture deal context, blockers, and action items." },
+  "form.qualificationAnswers": { he: "תשובות כשירות", en: "Qualification answers" },
+  "form.overrideRule": { he: "כלל עוקף", en: "Override rule" },
+  "form.weight": { he: "משקל {value}%", en: "{value}% weight" },
+  "form.pipelineStageOutcome": { he: "שלב ותוצאה", en: "Pipeline stage and outcome" },
+  "form.stage": { he: "שלב", en: "Stage" },
+  "form.perpetualContract": { he: "חוזה מתמשך?", en: "Perpetual contract?" },
+  "form.dueDate": { he: "תאריך יעד", en: "Due date" },
+  "form.actualAwardedAmount": { he: "סכום זכייה בפועל", en: "Actual awarded amount" },
+  "form.amountLines": { he: "שורות סכומים", en: "Amount lines" },
+  "form.amountLinesHelp": { he: "הסכומים נשמרים לפי סוג עבודה. הסכום הכולל מחושב תמיד משורות אלו.", en: "Amounts are captured per work type. Total amount is always calculated from these lines." },
+  "form.addLine": { he: "הוספת שורה", en: "Add line" },
+  "form.note": { he: "הערה", en: "Note" },
+  "form.notePlaceholder": { he: "הערת שורה אופציונלית", en: "Optional line note" },
+  "form.auditTrail": { he: "יומן שינויים", en: "Audit trail" },
+  "form.liveCalculations": { he: "חישובים חיים", en: "Live calculations" },
+  "form.totalAmount": { he: "סכום כולל", en: "Total Amount" },
+  "form.qualificationScore": { he: "ציון כשירות", en: "Qualification Score" },
+  "form.qualificationContribution": { he: "תרומת כשירות", en: "Qualification Contribution" },
+  "form.stageContribution": { he: "תרומת שלב", en: "Stage Contribution" },
+  "form.chanceToWin": { he: "סיכוי לזכייה", en: "Chance to Win" },
+  "form.forecastAmount": { he: "סכום תחזית", en: "Forecast Amount" },
+  "form.highConfidenceForecast": { he: "תחזית בביטחון גבוה", en: "High-Confidence Forecast" },
+  "form.wonAmount": { he: "סכום זכייה", en: "Won Amount" },
+  "form.forecastInclusion": { he: "הכללה בתחזית", en: "Forecast inclusion" },
+  "form.forecastIncomplete": { he: "הליד אינו שלם עד להשלמת השדות הבאים:", en: "Incomplete until these fields are supplied:" },
+  "form.forecastComplete": { he: "הליד שלם מספיק כדי להשתתף בווידג'טי התחזית.", en: "This lead is complete enough to participate in forecast widgets." },
+  "form.currentOwner": { he: "בעלים נוכחי", en: "Current owner" },
+  "stage.Before": { he: "לפני", en: "Before" },
+  "stage.Approaching": { he: "מתקרב", en: "Approaching" },
+  "stage.Sent": { he: "נשלח", en: "Sent" },
+  "offerStatus.Open": { he: "פתוח", en: "Open" },
+  "offerStatus.Win": { he: "זכייה", en: "Win" },
+  "offerStatus.Lose": { he: "הפסד", en: "Lose" },
+  "offerStatus.Suspended": { he: "מושהה", en: "Suspended" },
+  "offerStatus.Cancelled": { he: "בוטל", en: "Cancelled" }
+});
+
 const state = {
   shellContext: null,
   loadingContext: true,
   loadingData: false,
   saving: false,
+  exporting: false,
   error: "",
   toast: null,
+  validationErrors: [],
+  showValidationSummary: false,
   view: "dashboard",
   metadata: null,
   leads: [],
   filters: { ...DEFAULT_FILTERS },
   form: createEmptyForm(),
-  selectedLeadId: null
+  selectedLeadId: null,
+  formModalOpen: false
 };
+
+const focusableSelector = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])"
+].join(", ");
+
+let pendingFocusRequest = null;
+let modalTriggerFocusRequest = null;
+let pendingModalViewport = null;
 
 const allowedOrigins = new Set([window.location.origin]);
 if (document.referrer) {
@@ -39,15 +308,191 @@ if (document.referrer) {
   }
 }
 
-const amountFormat = new Intl.NumberFormat(undefined, {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-});
+function resolveOrigin(value) {
+  try {
+    return value ? new URL(value).origin : null;
+  } catch {
+    return null;
+  }
+}
+
+function currentLocale() {
+  return state.shellContext?.locale === LocaleCodes.English
+    ? LocaleCodes.English
+    : LocaleCodes.Hebrew;
+}
+
+function currentDirection() {
+  return state.shellContext?.direction === "ltr" ? "ltr" : "rtl";
+}
+
+function translate(key, params = {}) {
+  const entry = textCatalog[key];
+  const locale = currentLocale();
+  const template = entry?.[locale] ?? entry?.[LocaleCodes.Hebrew] ?? key;
+  return template.replace(/\{(\w+)\}/g, (match, paramKey) => (
+    params[paramKey] == null ? match : String(params[paramKey])
+  ));
+}
+
+function translateStage(value) {
+  return translate(`stage.${value}`);
+}
+
+function translateOfferStatus(value) {
+  return translate(`offerStatus.${value}`);
+}
+
+function translateQualificationQuestion(question) {
+  const translated = translate(`question.${question.code}`);
+  return translated === `question.${question.code}` ? question.label : translated;
+}
+
+function translateWorkTypeLabel(code, fallback) {
+  if (!code) {
+    return fallback || "";
+  }
+
+  const key = `WorkType.${code}`;
+  const translated = translate(key);
+  return translated === key ? (fallback || code) : translated;
+}
+
+function translateWorkType(workType) {
+  return translateWorkTypeLabel(workType?.code, workType?.name);
+}
+
+function findCustomerMatch(value) {
+  const normalized = normalize(value);
+  if (!normalized) {
+    return null;
+  }
+
+  return (state.metadata?.customers || []).find((customer) => normalize(customer.name) === normalized) || null;
+}
+
+function parseAmountInput(value) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return {
+      text,
+      value: null,
+      isEmpty: true,
+      isValid: true
+    };
+  }
+
+  if (!AmountInputPattern.test(text)) {
+    return {
+      text,
+      value: null,
+      isEmpty: false,
+      isValid: false
+    };
+  }
+
+  const numericValue = Number(text.replaceAll(",", ""));
+  return {
+    text,
+    value: Number.isFinite(numericValue) ? numericValue : null,
+    isEmpty: false,
+    isValid: Number.isFinite(numericValue)
+  };
+}
+
+function isLeadFormOpen() {
+  return state.formModalOpen === true;
+}
+
+function getHeaderContent() {
+  if (isLeadFormOpen()) {
+    return {
+      header: state.selectedLeadId ? translate("view.editLead") : translate("view.newLead"),
+      subHeader: state.view === "list" ? translate("view.list") : translate("view.dashboard")
+    };
+  }
+
+  if (state.view === "list") {
+    return {
+      header: translate("app.title"),
+      subHeader: translate("view.list")
+    };
+  }
+
+  return {
+    header: translate("app.title"),
+    subHeader: translate("view.dashboard")
+  };
+}
+
+function getInternalHeaderContent() {
+  return {
+    header: translate("app.title"),
+    subHeader: state.view === "list"
+      ? translate("app.subtitle.list")
+      : translate("app.subtitle.dashboard")
+  };
+}
+
+function getLeadFormHeaderContent() {
+  return {
+    header: state.selectedLeadId ? translate("view.editLead") : translate("view.newLead"),
+    subHeader: state.selectedLeadId
+      ? translate("form.header.editLeadSubtitle")
+      : translate("form.header.newLeadSubtitle")
+  };
+}
+
+function postHostCommand(command, payload) {
+  if (window.parent === window) {
+    return;
+  }
+
+  window.parent.postMessage(
+    {
+      type: MessageTypes.MiniAppCommand,
+      version: MessageVersion,
+      command,
+      payload
+    },
+    hostOrigin
+  );
+}
+
+function syncHostHeader() {
+  if (!state.shellContext) {
+    return;
+  }
+
+  const { header, subHeader } = getHeaderContent();
+  const signature = JSON.stringify([header, subHeader]);
+  if (signature === lastHeaderAnnouncement) {
+    return;
+  }
+
+  lastHeaderAnnouncement = signature;
+  postHostCommand(HostCommandNames.SetPageHeader, {
+    header,
+    subHeader: subHeader || undefined
+  });
+}
+
+function applyShellPresentation() {
+  const locale = currentLocale();
+  const direction = currentDirection();
+
+  document.documentElement.lang = locale;
+  document.documentElement.dir = direction;
+  document.body.lang = locale;
+  document.body.dir = direction;
+}
 
 window.addEventListener("message", onShellMessage);
+window.addEventListener("keydown", onKeyDown);
 app.addEventListener("click", onClick);
 app.addEventListener("input", onInput);
 app.addEventListener("change", onChange);
+app.addEventListener("submit", onSubmit);
 
 render();
 
@@ -62,6 +507,7 @@ function createEmptyForm() {
   return {
     id: "",
     customerId: "",
+    customerSearch: "",
     projectName: "",
     comments: "",
     stage: "",
@@ -84,19 +530,209 @@ function createEmptyAmountLine() {
   };
 }
 
+function escapeSelectorValue(value) {
+  return String(value ?? "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("\"", "\\\"");
+}
+
+function createFocusRequest(selector, options = {}) {
+  if (!selector) {
+    return null;
+  }
+
+  return {
+    selector,
+    selectionStart: options.selectionStart ?? null,
+    selectionEnd: options.selectionEnd ?? null
+  };
+}
+
+function describeFocusableElement(element) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  const selectorParts = [];
+
+  if (element.dataset.testid) {
+    selectorParts.push(`[data-testid="${escapeSelectorValue(element.dataset.testid)}"]`);
+  } else if (element.dataset.formField) {
+    selectorParts.push(`[data-form-field="${escapeSelectorValue(element.dataset.formField)}"]`);
+  } else if (element.dataset.filterField) {
+    selectorParts.push(`[data-filter-field="${escapeSelectorValue(element.dataset.filterField)}"]`);
+  } else if (element.dataset.lineField) {
+    selectorParts.push(`[data-line-field="${escapeSelectorValue(element.dataset.lineField)}"]`);
+    selectorParts.push(`[data-index="${escapeSelectorValue(element.dataset.index)}"]`);
+  } else if (element.dataset.questionCode) {
+    selectorParts.push(`[data-question-code="${escapeSelectorValue(element.dataset.questionCode)}"]`);
+    selectorParts.push(`[value="${escapeSelectorValue(element.value)}"]`);
+  } else if (element.dataset.toggleField) {
+    selectorParts.push(`[data-toggle-field="${escapeSelectorValue(element.dataset.toggleField)}"]`);
+    selectorParts.push(`[value="${escapeSelectorValue(element.value)}"]`);
+  } else if (element.dataset.action) {
+    selectorParts.push(`[data-action="${escapeSelectorValue(element.dataset.action)}"]`);
+    if (element.dataset.leadId) {
+      selectorParts.push(`[data-lead-id="${escapeSelectorValue(element.dataset.leadId)}"]`);
+    }
+    if (element.dataset.index) {
+      selectorParts.push(`[data-index="${escapeSelectorValue(element.dataset.index)}"]`);
+    }
+  } else if (element.id) {
+    selectorParts.push(`#${escapeSelectorValue(element.id)}`);
+  }
+
+  if (!selectorParts.length) {
+    return null;
+  }
+
+  const request = createFocusRequest(selectorParts.join(""), {
+    selectionStart: typeof element.selectionStart === "number" ? element.selectionStart : null,
+    selectionEnd: typeof element.selectionEnd === "number" ? element.selectionEnd : null
+  });
+
+  return request;
+}
+
+function queueFocusRestore(request) {
+  pendingFocusRequest = request;
+}
+
+function queueActiveElementRestore() {
+  queueModalViewportRestore();
+  queueFocusRestore(describeFocusableElement(document.activeElement));
+}
+
+function queueModalViewportRestore() {
+  const modalBody = app.querySelector(".lead-modal-body");
+  if (!(modalBody instanceof HTMLElement)) {
+    return;
+  }
+
+  pendingModalViewport = {
+    top: modalBody.scrollTop,
+    left: modalBody.scrollLeft
+  };
+}
+
+function restoreModalViewport() {
+  const viewport = pendingModalViewport;
+  pendingModalViewport = null;
+  if (!viewport) {
+    return;
+  }
+
+  const modalBody = app.querySelector(".lead-modal-body");
+  if (!(modalBody instanceof HTMLElement)) {
+    return;
+  }
+
+  modalBody.scrollTop = viewport.top;
+  modalBody.scrollLeft = viewport.left;
+}
+
+function restorePendingFocus() {
+  const request = pendingFocusRequest;
+  pendingFocusRequest = null;
+  if (!request?.selector) {
+    return;
+  }
+
+  const element = app.querySelector(request.selector);
+  if (!(element instanceof HTMLElement)) {
+    return;
+  }
+
+  element.focus({ preventScroll: true });
+
+  if (
+    typeof request.selectionStart === "number"
+    && typeof request.selectionEnd === "number"
+    && typeof element.setSelectionRange === "function"
+  ) {
+    try {
+      element.setSelectionRange(request.selectionStart, request.selectionEnd);
+    } catch {
+      // Selection restore is best-effort only.
+    }
+  }
+}
+
+function getModalRoot() {
+  return app.querySelector("[data-modal-root]");
+}
+
+function getFocusableElements(root) {
+  return Array.from(root.querySelectorAll(focusableSelector)).filter((element) =>
+    element instanceof HTMLElement
+    && !element.hasAttribute("hidden")
+    && element.getAttribute("aria-hidden") !== "true"
+  );
+}
+
+function syncModalPresentation() {
+  document.body.style.overflow = isLeadFormOpen() ? "hidden" : "";
+}
+
+function finalizeRender({ syncHeader = false } = {}) {
+  syncModalPresentation();
+  if (syncHeader) {
+    syncHostHeader();
+  }
+  restoreModalViewport();
+  restorePendingFocus();
+}
+
+function openLeadForm({ lead = null, opener = null } = {}) {
+  modalTriggerFocusRequest = describeFocusableElement(opener) || describeFocusableElement(document.activeElement);
+  state.selectedLeadId = lead?.id || null;
+  state.form = lead ? mapLeadToForm(lead) : createEmptyForm();
+  state.formModalOpen = true;
+  state.toast = null;
+  clearValidationState();
+  queueFocusRestore(createFocusRequest(
+    lead ? "[data-modal-root] [data-testid=\"project-input\"]" : "[data-modal-root] [data-testid=\"customer-input\"]"
+  ));
+  render();
+}
+
+function closeLeadForm({ nextFocusRequest = null } = {}) {
+  state.formModalOpen = false;
+  state.selectedLeadId = null;
+  queueFocusRestore(nextFocusRequest || modalTriggerFocusRequest);
+  modalTriggerFocusRequest = null;
+}
+
+function clearValidationState() {
+  state.validationErrors = [];
+  state.showValidationSummary = false;
+}
+
+function refreshValidationState({ forceShow = false } = {}) {
+  const errors = validateForm();
+  state.validationErrors = errors;
+  state.showValidationSummary = errors.length > 0 && (forceShow || state.showValidationSummary);
+  if (!errors.length) {
+    state.showValidationSummary = false;
+  }
+
+  return errors;
+}
+
 async function onShellMessage(event) {
   if (!allowedOrigins.has(event.origin)) {
     return;
   }
 
   const message = event.data;
-  if (!message || message.type !== "magalcom.shell.context" || message.version !== "v1") {
+  if (!message || message.type !== MessageTypes.ShellContext || message.version !== MessageVersion) {
     return;
   }
 
   state.shellContext = message;
   state.loadingContext = false;
   state.error = "";
+  applyShellPresentation();
   render();
 
   if (!state.metadata) {
@@ -126,22 +762,26 @@ async function loadModule() {
   }
 }
 
+function createApiHeaders(extraHeaders = {}, { includeJsonContentType = true } = {}) {
+  return {
+    ...(includeJsonContentType ? { "Content-Type": "application/json" } : {}),
+    Authorization: `Bearer ${state.shellContext.accessToken}`,
+    ...extraHeaders
+  };
+}
+
 async function apiRequest(path, options = {}) {
   if (!state.shellContext?.accessToken) {
-    throw new Error("Host context is missing an access token.");
+    throw new Error(translate("error.missingAccessToken"));
   }
 
   const response = await fetch(`${state.shellContext.configuration.apiBaseUrl}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${state.shellContext.accessToken}`,
-      ...(options.headers || {})
-    }
+    headers: createApiHeaders(options.headers || {})
   });
 
   if (!response.ok) {
-    let errorMessage = `Request failed with status ${response.status}.`;
+    let errorMessage = translate("error.requestFailedStatus", { status: response.status });
     try {
       const payload = await response.json();
       errorMessage = payload.error || payload.title || errorMessage;
@@ -160,6 +800,108 @@ async function apiRequest(path, options = {}) {
   return response.json();
 }
 
+async function apiDownload(path) {
+  if (!state.shellContext?.accessToken) {
+    throw new Error(translate("error.missingAccessToken"));
+  }
+
+  const response = await fetch(`${state.shellContext.configuration.apiBaseUrl}${path}`, {
+    headers: createApiHeaders({}, { includeJsonContentType: false })
+  });
+
+  if (!response.ok) {
+    let errorMessage = translate("error.requestFailedStatus", { status: response.status });
+    try {
+      const payload = await response.json();
+      errorMessage = payload.error || payload.title || errorMessage;
+    } catch {
+      const text = await response.text();
+      errorMessage = text || errorMessage;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return {
+    blob: await response.blob(),
+    fileName: extractFileName(response.headers.get("Content-Disposition"))
+  };
+}
+
+function extractFileName(contentDisposition) {
+  if (!contentDisposition) {
+    return "leads-export.xlsx";
+  }
+
+  const encodedMatch = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+  if (encodedMatch?.[1]) {
+    return decodeURIComponent(encodedMatch[1]);
+  }
+
+  const simpleMatch = /filename="?([^\";]+)"?/i.exec(contentDisposition);
+  return simpleMatch?.[1] || "leads-export.xlsx";
+}
+
+function buildLeadExportPath(filters) {
+  const params = new URLSearchParams();
+  const exportFilters = filters || DEFAULT_FILTERS;
+
+  const setParam = (key, value) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      params.set(key, String(value));
+    }
+  };
+
+  setParam("search", exportFilters.search);
+  setParam("ownerSubjectId", exportFilters.ownerSubjectId);
+  setParam("customerId", exportFilters.customerId);
+  setParam("workTypeId", exportFilters.workTypeId);
+  setParam("contractType", exportFilters.contractType);
+  setParam("stage", exportFilters.stage);
+  setParam("offerStatus", exportFilters.offerStatus);
+  setParam("dueDateFrom", exportFilters.dueDateFrom);
+  setParam("dueDateTo", exportFilters.dueDateTo);
+  setParam("amountMin", exportFilters.amountMin);
+  setParam("amountMax", exportFilters.amountMax);
+  setParam("sortBy", exportFilters.sortBy || DEFAULT_FILTERS.sortBy);
+  setParam("locale", currentLocale());
+
+  const query = params.toString();
+  return query ? `/api/v1/leads/export?${query}` : "/api/v1/leads/export";
+}
+
+function triggerBrowserDownload(blob, fileName) {
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = fileName;
+  link.rel = "noopener";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+}
+
+async function exportLeads(filters) {
+  state.exporting = true;
+  state.toast = null;
+  render();
+
+  try {
+    const download = await apiDownload(buildLeadExportPath(filters));
+    triggerBrowserDownload(download.blob, download.fileName);
+    state.exporting = false;
+    render();
+  } catch (error) {
+    state.exporting = false;
+    state.toast = {
+      type: "error",
+      message: String(error.message || error)
+    };
+    render();
+  }
+}
+
 function onClick(event) {
   const target = event.target.closest("[data-action], [data-view]");
   if (!target) {
@@ -175,11 +917,7 @@ function onClick(event) {
   const { action } = target.dataset;
 
   if (action === "new-lead") {
-    state.view = "form";
-    state.selectedLeadId = null;
-    state.form = createEmptyForm();
-    state.toast = null;
-    render();
+    openLeadForm({ opener: target });
     return;
   }
 
@@ -189,34 +927,62 @@ function onClick(event) {
       return;
     }
 
-    state.selectedLeadId = lead.id;
-    state.view = "form";
-    state.form = mapLeadToForm(lead);
-    state.toast = null;
-    render();
+    openLeadForm({ lead, opener: target });
     return;
   }
 
   if (action === "cancel-form") {
-    state.view = "list";
+    clearValidationState();
+    closeLeadForm();
     state.toast = null;
     render();
     return;
   }
 
   if (action === "add-line") {
+    const nextIndex = state.form.amountLines.length;
+    const triggeredFromKeyboard = event.detail === 0;
+    queueModalViewportRestore();
     state.form.amountLines = [...state.form.amountLines, createEmptyAmountLine()];
+    queueFocusRestore(
+      triggeredFromKeyboard
+        ? createFocusRequest(`[data-testid="amount-line-worktype-${nextIndex}"]`)
+        : describeFocusableElement(target)
+    );
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
+    }
     render();
     return;
   }
 
   if (action === "remove-line") {
+    queueModalViewportRestore();
     const index = Number(target.dataset.index);
     state.form.amountLines = state.form.amountLines.filter((_, itemIndex) => itemIndex !== index);
     if (state.form.amountLines.length === 0) {
       state.form.amountLines = [createEmptyAmountLine()];
     }
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
+    }
     render();
+    return;
+  }
+
+  if (action === "toggle-validation-summary") {
+    queueActiveElementRestore();
+    state.showValidationSummary = !state.showValidationSummary;
+    render();
+    return;
+  }
+
+  if (action === "focus-validation") {
+    const element = app.querySelector(target.dataset.selector || "");
+    if (element instanceof HTMLElement) {
+      element.scrollIntoView({ block: "center", behavior: "smooth" });
+      element.focus({ preventScroll: true });
+    }
     return;
   }
 
@@ -232,28 +998,57 @@ function onClick(event) {
     return;
   }
 
+  if (action === "export-leads") {
+    void exportLeads(state.filters);
+    return;
+  }
+
+  if (action === "export-report") {
+    void exportLeads(DEFAULT_FILTERS);
+    return;
+  }
+
   if (action === "apply-dashboard-filter") {
     const { filterKey, filterValue, filterLabel } = target.dataset;
     state.filters = { ...DEFAULT_FILTERS, [filterKey]: filterValue || "" };
     state.view = "list";
     state.toast = filterLabel
-      ? { type: "success", message: `Filtered list by ${filterLabel}.` }
+      ? { type: "success", message: translate("toast.filtered", { label: filterLabel }) }
       : null;
     render();
     return;
-  }
-
-  if (action === "save-lead") {
-    void saveLead();
   }
 }
 
 function onInput(event) {
   const field = event.target.dataset.formField;
   if (field) {
+    if (field === "customerSearch") {
+      const previousCustomerId = state.form.customerId;
+      const match = findCustomerMatch(event.target.value);
+      state.form.customerSearch = event.target.value;
+      state.form.customerId = match?.id || "";
+      if (previousCustomerId !== state.form.customerId) {
+        state.form.projectName = "";
+      }
+      const shouldRender = previousCustomerId !== state.form.customerId || state.validationErrors.length || state.showValidationSummary;
+      if (state.validationErrors.length || state.showValidationSummary) {
+        refreshValidationState();
+      }
+      if (shouldRender) {
+        queueActiveElementRestore();
+        render();
+      }
+      return;
+    }
+
+    queueActiveElementRestore();
     state.form[field] = event.target.value;
     if (field === "customerId") {
       state.form.projectName = "";
+    }
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
     }
     render();
     return;
@@ -261,6 +1056,7 @@ function onInput(event) {
 
   const filterField = event.target.dataset.filterField;
   if (filterField) {
+    queueActiveElementRestore();
     state.filters[filterField] = event.target.value;
     render();
     return;
@@ -268,6 +1064,7 @@ function onInput(event) {
 
   const lineField = event.target.dataset.lineField;
   if (lineField) {
+    queueActiveElementRestore();
     const index = Number(event.target.dataset.index);
     state.form.amountLines = state.form.amountLines.map((line, lineIndex) =>
       lineIndex === index
@@ -277,6 +1074,9 @@ function onInput(event) {
           }
         : line
     );
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
+    }
     render();
   }
 }
@@ -284,44 +1084,113 @@ function onInput(event) {
 function onChange(event) {
   const questionCode = event.target.dataset.questionCode;
   if (questionCode) {
+    queueActiveElementRestore();
     state.form.qualificationAnswers = {
       ...state.form.qualificationAnswers,
       [questionCode]: event.target.value === "true"
     };
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
+    }
     render();
     return;
   }
 
   const toggleField = event.target.dataset.toggleField;
   if (toggleField) {
+    queueActiveElementRestore();
     state.form[toggleField] = event.target.value;
+    if (state.validationErrors.length || state.showValidationSummary) {
+      refreshValidationState();
+    }
     render();
   }
 }
 
+function onSubmit(event) {
+  if (!event.target.closest("[data-lead-form]")) {
+    return;
+  }
+
+  event.preventDefault();
+  void saveLead();
+}
+
+function onKeyDown(event) {
+  if (!isLeadFormOpen()) {
+    return;
+  }
+
+  if (event.key === "Escape" && !state.saving) {
+    event.preventDefault();
+    clearValidationState();
+    state.toast = null;
+    closeLeadForm();
+    render();
+    return;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && !state.saving) {
+    event.preventDefault();
+    void saveLead();
+    return;
+  }
+
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const modalRoot = getModalRoot();
+  if (!(modalRoot instanceof HTMLElement)) {
+    return;
+  }
+
+  const focusableElements = getFocusableElements(modalRoot);
+  if (!focusableElements.length) {
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const activeElement = document.activeElement;
+
+  if (event.shiftKey) {
+    if (activeElement === firstElement || !modalRoot.contains(activeElement)) {
+      event.preventDefault();
+      lastElement.focus();
+    }
+    return;
+  }
+
+  if (activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+}
+
 async function saveLead() {
-  const errors = validateForm();
+  const errors = refreshValidationState({ forceShow: true });
   if (errors.length > 0) {
-    state.toast = {
-      type: "error",
-      message: errors.join(" ")
-    };
+    state.toast = null;
+    queueFocusRestore(createFocusRequest("[data-testid=\"validation-toggle\"]"));
     render();
     return;
   }
 
   state.saving = true;
   state.toast = null;
+  clearValidationState();
   render();
 
   try {
+    const wasEditing = Boolean(state.selectedLeadId);
     const payload = buildLeadPayload();
     const path = state.selectedLeadId
       ? `/api/v1/leads/${state.selectedLeadId}`
       : "/api/v1/leads";
     const method = state.selectedLeadId ? "PUT" : "POST";
 
-    await apiRequest(path, {
+    const savedLead = await apiRequest(path, {
       method,
       body: JSON.stringify(payload)
     });
@@ -334,10 +1203,15 @@ async function saveLead() {
     state.metadata = metadata;
     state.leads = leads;
     state.saving = false;
-    state.view = "list";
+    clearValidationState();
+    closeLeadForm({
+      nextFocusRequest: state.view === "list"
+        ? createFocusRequest(`[data-action="edit-lead"][data-lead-id="${escapeSelectorValue(savedLead.id)}"]`)
+        : modalTriggerFocusRequest
+    });
     state.toast = {
       type: "success",
-      message: state.selectedLeadId ? "Lead updated successfully." : "Lead created successfully."
+      message: wasEditing ? translate("toast.updated") : translate("toast.created")
     };
     render();
   } catch (error) {
@@ -353,23 +1227,68 @@ async function saveLead() {
 function validateForm() {
   const errors = [];
   if (!state.form.customerId) {
-    errors.push("Customer is required.");
+    errors.push({
+      id: "validation-customer",
+      fieldKey: "customerId",
+      selector: "#customer-search",
+      message: translate("validation.customerRequired")
+    });
   }
 
   if (!state.form.projectName.trim()) {
-    errors.push("Project is required.");
+    errors.push({
+      id: "validation-project",
+      fieldKey: "projectName",
+      selector: "#project",
+      message: translate("validation.projectRequired")
+    });
   }
 
   const meaningfulLines = getMeaningfulAmountLines();
   meaningfulLines.forEach((line, index) => {
     if (!line.workTypeId) {
-      errors.push(`Amount line ${index + 1} must include a work type.`);
+      errors.push({
+        id: `validation-amount-line-worktype-${index}`,
+        fieldKey: `amountLines.${index}.workTypeId`,
+        selector: `[data-testid="amount-line-worktype-${index}"]`,
+        message: translate("validation.amountLineWorkType", { index: index + 1 })
+      });
     }
 
-    if (!line.amount || Number(line.amount) <= 0) {
-      errors.push(`Amount line ${index + 1} must include a positive amount.`);
+    const amount = parseAmountInput(line.amount);
+    if (!amount.isEmpty && !amount.isValid) {
+      errors.push({
+        id: `validation-amount-line-amount-${index}`,
+        fieldKey: `amountLines.${index}.amount`,
+        selector: `[data-testid="amount-line-amount-${index}"]`,
+        message: translate("validation.amountLineAmountInvalid", { index: index + 1 })
+      });
+    } else if (amount.isEmpty || !amount.value || amount.value <= 0) {
+      errors.push({
+        id: `validation-amount-line-amount-${index}`,
+        fieldKey: `amountLines.${index}.amount`,
+        selector: `[data-testid="amount-line-amount-${index}"]`,
+        message: translate("validation.amountLineAmount", { index: index + 1 })
+      });
     }
   });
+
+  const actualAwardedAmount = parseAmountInput(state.form.actualAwardedAmount);
+  if (state.form.offerStatus === "Win" && actualAwardedAmount.isEmpty) {
+    errors.push({
+      id: "validation-actual-awarded-required",
+      fieldKey: "actualAwardedAmount",
+      selector: "#actual-awarded",
+      message: translate("validation.actualAwardedRequired")
+    });
+  } else if ((!actualAwardedAmount.isEmpty && !actualAwardedAmount.isValid) || (state.form.offerStatus === "Win" && (!actualAwardedAmount.value || actualAwardedAmount.value <= 0))) {
+    errors.push({
+      id: "validation-actual-awarded-invalid",
+      fieldKey: "actualAwardedAmount",
+      selector: "#actual-awarded",
+      message: translate("validation.actualAwardedInvalid")
+    });
+  }
 
   return errors;
 }
@@ -397,11 +1316,11 @@ function buildLeadPayload() {
     isPerpetual: state.form.isPerpetual === "" ? null : state.form.isPerpetual === "true",
     dueDate: state.form.dueDate || null,
     offerStatus: state.form.offerStatus,
-    actualAwardedAmount: state.form.actualAwardedAmount === "" ? null : Number(state.form.actualAwardedAmount),
+    actualAwardedAmount: parseAmountInput(state.form.actualAwardedAmount).value,
     amountLines: getMeaningfulAmountLines().map((line) => ({
       id: line.id || null,
       workTypeId: line.workTypeId,
-      amount: Number(line.amount),
+      amount: parseAmountInput(line.amount).value,
       note: line.note.trim()
     }))
   };
@@ -418,6 +1337,7 @@ function mapLeadToForm(lead) {
   return {
     id: lead.id,
     customerId: lead.customer.id,
+    customerSearch: lead.customer.name,
     projectName: lead.project.name,
     comments: lead.comments || "",
     stage: lead.stage || "",
@@ -542,74 +1462,249 @@ function getOwners() {
   return Array.from(map.values()).sort((left, right) => left.displayName.localeCompare(right.displayName));
 }
 
+function getStageColor(stage) {
+  return DashboardStageColors[stage] || DashboardStageColors.Unstaged;
+}
+
+function getStatusColor(status) {
+  return DashboardStatusColors[status] || "#8597a6";
+}
+
+function getWorkTypeColor(code, index = 0) {
+  return DashboardWorkTypeColors[code] || DashboardFallbackPalette[index % DashboardFallbackPalette.length];
+}
+
+function getDueInDays(dateValue) {
+  if (!dateValue) {
+    return null;
+  }
+
+  const dueDate = new Date(`${dateValue}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((dueDate - today) / 86400000);
+}
+
+function toMonthKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function buildForecastTimeline(leads) {
+  const monthlyMap = new Map();
+  leads.forEach((lead) => {
+    if (!lead.dueDate) {
+      return;
+    }
+
+    const key = lead.dueDate.slice(0, 7);
+    monthlyMap.set(key, (monthlyMap.get(key) || 0) + lead.metrics.forecastAmount);
+  });
+
+  const start = new Date();
+  start.setDate(1);
+
+  const timeline = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
+    const key = toMonthKey(date);
+    return {
+      id: key,
+      label: key,
+      value: monthlyMap.get(key) || 0
+    };
+  });
+
+  if (timeline.some((item) => item.value > 0) || monthlyMap.size === 0) {
+    return timeline;
+  }
+
+  return Array.from(monthlyMap.entries())
+    .sort((left, right) => String(left[0]).localeCompare(String(right[0])))
+    .slice(0, 6)
+    .map(([key, value]) => ({
+      id: key,
+      label: key,
+      value
+    }));
+}
+
+function groupByMetrics(items, labelSelector, valueSelector, idSelector = null) {
+  const map = new Map();
+  items.forEach((item) => {
+    const label = labelSelector(item);
+    const key = idSelector ? idSelector(item) : label;
+    const existing = map.get(key) || { id: key, label, value: 0, count: 0 };
+    existing.value += valueSelector(item);
+    existing.count += 1;
+    map.set(key, existing);
+  });
+
+  return Array.from(map.values()).sort((left, right) => {
+    if (right.value !== left.value) {
+      return right.value - left.value;
+    }
+
+    return right.count - left.count;
+  });
+}
+
 function getDashboardModel() {
-  const activeLeads = (state.leads || []).filter((lead) =>
+  const allLeads = state.leads || [];
+  const activeLeads = allLeads.filter((lead) =>
     lead.offerStatus === "Open" || lead.offerStatus === "Suspended"
   );
   const forecastEligible = activeLeads.filter((lead) => !lead.isIncomplete);
-  const wins = (state.leads || []).filter((lead) => lead.offerStatus === "Win");
+  const wins = allLeads.filter((lead) => lead.offerStatus === "Win");
+  const closedLeads = allLeads.filter((lead) => lead.offerStatus === "Win" || lead.offerStatus === "Lose" || lead.offerStatus === "Cancelled");
 
-  const pipelineByOwner = groupBy(
+  const pipelineByOwner = groupByMetrics(
     activeLeads,
     (lead) => lead.owner.displayName,
     (lead) => lead.metrics.totalAmount,
     (lead) => lead.owner.subjectId
   );
-  const pipelineByCustomer = groupBy(activeLeads, (lead) => lead.customer.name, (lead) => lead.metrics.totalAmount, (lead) => lead.customer.id);
-  const stageMix = groupBy(activeLeads, (lead) => lead.stage || "Unstaged", () => 1);
+  const pipelineByCustomer = groupByMetrics(
+    activeLeads,
+    (lead) => lead.customer.name,
+    (lead) => lead.metrics.totalAmount,
+    (lead) => lead.customer.id
+  );
 
   const workTypeTotals = new Map();
   activeLeads.forEach((lead) => {
     (lead.amountTotalsByWorkType || []).forEach((total) => {
       const existing = workTypeTotals.get(total.workTypeId) || {
         id: total.workTypeId,
-        label: total.workTypeName,
-        value: 0
+        code: total.workTypeCode,
+        label: translateWorkTypeLabel(total.workTypeCode, total.workTypeName),
+        value: 0,
+        count: 0
       };
       existing.value += total.amount;
+      existing.count += 1;
       workTypeTotals.set(total.workTypeId, existing);
     });
   });
 
-  const riskLeads = (state.leads || []).filter((lead) => {
+  const riskLeads = allLeads.filter((lead) => {
     if (lead.isIncomplete || lead.offerStatus === "Suspended") {
       return true;
     }
 
-    if (!lead.dueDate) {
-      return false;
-    }
-
-    const dueDate = new Date(lead.dueDate);
-    const today = new Date();
-    const diffDays = Math.ceil((dueDate - today) / 86400000);
-    return diffDays <= 7;
+    const diffDays = getDueInDays(lead.dueDate);
+    return diffDays != null && diffDays <= 7;
   });
 
-  const monthlyForecast = groupBy(
-    forecastEligible.filter((lead) => lead.dueDate),
-    (lead) => lead.dueDate.slice(0, 7),
-    (lead) => lead.metrics.forecastAmount
-  );
+  const cards = {
+    openCount: activeLeads.length,
+    pipelineAmount: sum(activeLeads, (lead) => lead.metrics.totalAmount),
+    weightedForecast: sum(forecastEligible, (lead) => lead.metrics.forecastAmount),
+    perpetualValue: sum(
+      forecastEligible.filter((lead) => lead.isPerpetual === true),
+      (lead) => lead.metrics.forecastAmount
+    ),
+    highConfidence: sum(forecastEligible, (lead) => lead.metrics.highConfidenceForecastAmount),
+    wins: sum(wins, (lead) => lead.metrics.wonAmount),
+    atRiskAmount: sum(riskLeads, (lead) => lead.metrics.totalAmount)
+  };
+
+  const totalActiveAmount = Math.max(cards.pipelineAmount, 0);
+  const dueSoonCount = activeLeads.filter((lead) => {
+    const diffDays = getDueInDays(lead.dueDate);
+    return diffDays != null && diffDays >= 0 && diffDays <= 30;
+  }).length;
+  const overdueCount = activeLeads.filter((lead) => {
+    const diffDays = getDueInDays(lead.dueDate);
+    return diffDays != null && diffDays < 0;
+  }).length;
+  const averageChance = forecastEligible.length
+    ? sum(forecastEligible, (lead) => lead.metrics.chanceToWin) / forecastEligible.length
+    : 0;
+  const winRate = closedLeads.length
+    ? (wins.length / closedLeads.length) * 100
+    : 0;
+  const forecastCoverage = totalActiveAmount
+    ? (cards.weightedForecast / totalActiveAmount) * 100
+    : 0;
+  const highConfidenceShare = cards.weightedForecast
+    ? (cards.highConfidence / cards.weightedForecast) * 100
+    : 0;
+  const perpetualShare = cards.weightedForecast
+    ? (cards.perpetualValue / cards.weightedForecast) * 100
+    : 0;
+  const riskShare = totalActiveAmount
+    ? (cards.atRiskAmount / totalActiveAmount) * 100
+    : 0;
+
+  const totalActiveCount = activeLeads.length;
+  const stagePerformance = [...StageValues, "Unstaged"].map((stage) => {
+    const matchingLeads = activeLeads.filter((lead) => (lead.stage || "Unstaged") === stage);
+    const amount = sum(matchingLeads, (lead) => lead.metrics.totalAmount);
+    const count = matchingLeads.length;
+    return {
+      id: stage,
+      label: stage === "Unstaged" ? translate("common.incomplete") : translateStage(stage),
+      value: amount,
+      count,
+      color: getStageColor(stage),
+      shareAmount: totalActiveAmount ? (amount / totalActiveAmount) * 100 : 0,
+      shareCount: totalActiveCount ? (count / totalActiveCount) * 100 : 0,
+      filterValue: stage === "Unstaged" ? "" : stage
+    };
+  });
+
+  const statusMix = OfferStatusValues.map((status) => {
+    const matchingLeads = allLeads.filter((lead) => lead.offerStatus === status);
+    return {
+      id: status,
+      label: translateOfferStatus(status),
+      value: sum(matchingLeads, (lead) => lead.metrics.totalAmount),
+      count: matchingLeads.length,
+      color: getStatusColor(status),
+      filterValue: status
+    };
+  }).filter((item) => item.count > 0);
+
+  const workTypeBreakdown = Array.from(workTypeTotals.values())
+    .sort((left, right) => right.value - left.value)
+    .map((item, index) => ({
+      ...item,
+      color: getWorkTypeColor(item.code, index),
+      filterValue: item.id
+    }));
+
+  const spotlightLead = [...activeLeads]
+    .sort((left, right) => right.metrics.forecastAmount - left.metrics.forecastAmount)[0] || null;
+  const spotlightCustomer = pipelineByCustomer[0] || null;
+  const spotlightOwner = pipelineByOwner[0] || null;
+
+  const customerCount = new Set(activeLeads.map((lead) => lead.customer.id)).size;
 
   return {
-    cards: {
-      openCount: activeLeads.length,
-      pipelineAmount: sum(activeLeads, (lead) => lead.metrics.totalAmount),
-      weightedForecast: sum(forecastEligible, (lead) => lead.metrics.forecastAmount),
-      perpetualValue: sum(
-        forecastEligible.filter((lead) => lead.isPerpetual === true),
-        (lead) => lead.metrics.forecastAmount
-      ),
-      highConfidence: sum(forecastEligible, (lead) => lead.metrics.highConfidenceForecastAmount),
-      wins: sum(wins, (lead) => lead.metrics.wonAmount)
+    cards,
+    summary: {
+      activeLeadCount: activeLeads.length,
+      customerCount,
+      dueSoonCount,
+      overdueCount,
+      averageChance,
+      winRate,
+      forecastCoverage,
+      highConfidenceShare,
+      perpetualShare,
+      riskShare
     },
-    pipelineByOwner,
-    pipelineByCustomer,
-    workTypeBreakdown: Array.from(workTypeTotals.values()).sort((left, right) => right.value - left.value),
-    stageMix,
-    monthlyForecast,
-    riskLeads: riskLeads.sort((left, right) => compareLeads(left, right, "dueDate")).slice(0, 8)
+    pipelineByOwner: pipelineByOwner.slice(0, 5),
+    pipelineByCustomer: pipelineByCustomer.slice(0, 5),
+    workTypeBreakdown,
+    stagePerformance,
+    statusMix,
+    monthlyForecast: buildForecastTimeline(forecastEligible),
+    riskLeads: riskLeads.sort((left, right) => compareLeads(left, right, "dueDate")).slice(0, 8),
+    spotlightLead,
+    spotlightCustomer,
+    spotlightOwner
   };
 }
 
@@ -639,10 +1734,14 @@ function computeDraftMetrics() {
   const workTypesById = new Map((state.metadata?.workTypes || []).map((item) => [item.id, item]));
 
   const lines = getMeaningfulAmountLines()
-    .filter((line) => line.workTypeId && Number(line.amount) > 0)
+    .map((line) => ({
+      ...line,
+      parsedAmount: parseAmountInput(line.amount)
+    }))
+    .filter((line) => line.workTypeId && line.parsedAmount.isValid && line.parsedAmount.value > 0)
     .map((line) => ({
       workType: workTypesById.get(line.workTypeId),
-      amount: Number(line.amount)
+      amount: line.parsedAmount.value
     }))
     .filter((line) => line.workType);
 
@@ -663,26 +1762,27 @@ function computeDraftMetrics() {
   const perpetual = state.form.isPerpetual === "true";
   const forecastAmount = perpetual ? totalAmount : totalAmount * (chanceToWin / 100);
   const highConfidence = perpetual || chanceToWin >= 50 ? forecastAmount : 0;
+  const actualAwardedAmount = parseAmountInput(state.form.actualAwardedAmount);
   const wonAmount =
-    state.form.offerStatus === "Win" && state.form.actualAwardedAmount !== ""
-      ? Number(state.form.actualAwardedAmount)
+    state.form.offerStatus === "Win" && actualAwardedAmount.isValid && actualAwardedAmount.value
+      ? actualAwardedAmount.value
       : 0;
 
   const missingFields = [];
   if (!state.form.stage) {
-    missingFields.push("Stage");
+    missingFields.push(translate("form.stage"));
   }
   if (!state.form.dueDate) {
-    missingFields.push("Due Date");
+    missingFields.push(translate("form.dueDate"));
   }
   if (state.form.isPerpetual === "") {
-    missingFields.push("Perpetual Contract");
+    missingFields.push(translate("form.perpetualContract"));
   }
   if (lines.length === 0) {
-    missingFields.push("Amount Lines");
+    missingFields.push(translate("form.amountLines"));
   }
-  if (state.form.offerStatus === "Win" && state.form.actualAwardedAmount === "") {
-    missingFields.push("Actual Awarded Amount");
+  if (state.form.offerStatus === "Win" && (!actualAwardedAmount.isValid || actualAwardedAmount.isEmpty || !actualAwardedAmount.value)) {
+    missingFields.push(translate("form.actualAwardedAmount"));
   }
 
   return {
@@ -703,12 +1803,13 @@ function render() {
     app.innerHTML = `
       <section class="waiting-shell">
         <article class="waiting-card">
-          <div class="eyebrow">Embedded CRM module</div>
-          <h1>Waiting for host context</h1>
-          <p>The leads app only starts after the parent CRM posts the current user, configuration, and access token.</p>
+          <div class="eyebrow">${escapeHtml(translate("state.waitingEyebrow"))}</div>
+          <h1>${escapeHtml(translate("state.waitingTitle"))}</h1>
+          <p>${escapeHtml(translate("state.waitingDescription"))}</p>
         </article>
       </section>
     `;
+    finalizeRender();
     return;
   }
 
@@ -716,12 +1817,13 @@ function render() {
     app.innerHTML = `
       <section class="error-shell">
         <article class="error-card">
-          <div class="eyebrow">Host handshake required</div>
-          <h1>CRM context was not received</h1>
-          <p>Open this module from the CRM shell so the iframe can receive a valid <code>postMessage</code> payload.</p>
+          <div class="eyebrow">${escapeHtml(translate("state.handshakeEyebrow"))}</div>
+          <h1>${escapeHtml(translate("state.handshakeTitle"))}</h1>
+          <p>${escapeHtml(translate("state.handshakeDescription"))}</p>
         </article>
       </section>
     `;
+    finalizeRender();
     return;
   }
 
@@ -729,12 +1831,13 @@ function render() {
     app.innerHTML = `
       <section class="error-shell">
         <article class="error-card">
-          <div class="eyebrow">Load failed</div>
-          <h1>Leads data could not be loaded</h1>
+          <div class="eyebrow">${escapeHtml(translate("state.loadFailedEyebrow"))}</div>
+          <h1>${escapeHtml(translate("state.loadFailedTitle"))}</h1>
           <p>${escapeHtml(state.error)}</p>
         </article>
       </section>
     `;
+    finalizeRender({ syncHeader: true });
     return;
   }
 
@@ -742,75 +1845,42 @@ function render() {
     app.innerHTML = `
       <section class="waiting-shell">
         <article class="waiting-card">
-          <div class="eyebrow">Connected as ${escapeHtml(state.shellContext.user.displayName)}</div>
-          <h1>Syncing lead workspace</h1>
-          <p>Loading customers, projects, work types, and the current pipeline from the CRM API.</p>
+          <div class="eyebrow">${escapeHtml(translate("state.connectedAs", { name: state.shellContext.user.displayName }))}</div>
+          <h1>${escapeHtml(translate("state.loadingTitle"))}</h1>
+          <p>${escapeHtml(translate("state.loadingDescription"))}</p>
         </article>
       </section>
     `;
+    finalizeRender({ syncHeader: true });
     return;
   }
 
   const dashboard = getDashboardModel();
   const filteredLeads = getFilteredLeads();
   const draftMetrics = computeDraftMetrics();
+  const shellContentAttributes = isLeadFormOpen() ? " aria-hidden=\"true\" inert" : "";
 
   app.innerHTML = `
-    <div class="shell">
-      ${renderHeader()}
-      ${renderNav()}
-      ${state.toast ? renderToast() : ""}
-      ${state.view === "dashboard" ? renderDashboard(dashboard) : ""}
-      ${state.view === "list" ? renderLeadList(filteredLeads) : ""}
-      ${state.view === "form" ? renderLeadForm(draftMetrics) : ""}
+    <div class="shell" dir="${currentDirection()}">
+      <div class="shell-content"${shellContentAttributes}>
+        ${renderInternalHeader()}
+        ${renderNav()}
+        ${state.toast ? renderToast() : ""}
+        ${state.view === "dashboard" ? renderDashboard(dashboard) : renderLeadList(filteredLeads)}
+      </div>
+      ${isLeadFormOpen() ? renderLeadForm(draftMetrics) : ""}
     </div>
   `;
+  finalizeRender({ syncHeader: true });
 }
 
-function renderHeader() {
+function renderInternalHeader() {
+  const { header, subHeader } = getInternalHeaderContent();
+
   return `
-    <header class="header">
-      <section class="hero">
-        <div class="eyebrow">Leads Management mini app</div>
-        <h1>Operational pipeline, not spreadsheet gravity.</h1>
-        <p>This iframe receives CRM identity and token context from the host shell, then runs lead calculations server-side while keeping dashboard, list, and form workflows in one module.</p>
-        <div class="hero-meta">
-          <div>
-            <small class="muted">Signed in</small>
-            <strong>${escapeHtml(state.shellContext.user.displayName)}</strong>
-          </div>
-          <div>
-            <small class="muted">Environment</small>
-            <strong>${escapeHtml(state.shellContext.environment)}</strong>
-          </div>
-          <div>
-            <small class="muted">Customers</small>
-            <strong>${state.metadata.customers.length}</strong>
-          </div>
-          <div>
-            <small class="muted">Open leads</small>
-            <strong>${getDashboardModel().cards.openCount}</strong>
-          </div>
-        </div>
-      </section>
-      <aside class="meta-card">
-        <div class="meta-row">
-          <span class="muted">Host user</span>
-          <strong>${escapeHtml(state.shellContext.user.email)}</strong>
-        </div>
-        <div class="meta-row">
-          <span class="muted">Roles</span>
-          <span>${state.shellContext.user.roles.map((role) => `<span class="chip">${escapeHtml(role)}</span>`).join("")}</span>
-        </div>
-        <div class="meta-row">
-          <span class="muted">API base</span>
-          <code>${escapeHtml(state.shellContext.configuration.apiBaseUrl)}</code>
-        </div>
-        <div class="meta-row">
-          <span class="muted">Token mode</span>
-          <span class="chip mono">memory only</span>
-        </div>
-      </aside>
+    <header class="app-header" data-testid="app-header">
+      <h1 class="app-header-title">${escapeHtml(header)}</h1>
+      <p class="app-header-subtitle">${escapeHtml(subHeader)}</p>
     </header>
   `;
 }
@@ -818,9 +1888,8 @@ function renderHeader() {
 function renderNav() {
   return `
     <nav class="nav" data-testid="view-nav">
-      <button type="button" data-view="dashboard" class="${state.view === "dashboard" ? "active" : ""}">Dashboard</button>
-      <button type="button" data-view="list" class="${state.view === "list" ? "active" : ""}">Lead List</button>
-      <button type="button" data-action="new-lead" class="${state.view === "form" && !state.selectedLeadId ? "active" : ""}" data-testid="new-lead-button">New Lead</button>
+      <button type="button" data-view="dashboard" class="${state.view === "dashboard" ? "active" : ""}">${escapeHtml(translate("nav.dashboard"))}</button>
+      <button type="button" data-view="list" class="${state.view === "list" ? "active" : ""}">${escapeHtml(translate("nav.list"))}</button>
     </nav>
   `;
 }
@@ -830,110 +1899,470 @@ function renderToast() {
     <section class="toast ${escapeHtml(state.toast.type)}">
       <div class="meta-row">
         <strong>${escapeHtml(state.toast.message)}</strong>
-        <button type="button" class="ghost-button" data-action="clear-toast">Dismiss</button>
+        <button type="button" class="ghost-button" data-action="clear-toast">${escapeHtml(translate("common.dismiss"))}</button>
       </div>
     </section>
   `;
 }
 
 function renderDashboard(model) {
+  const totalStatuses = model.statusMix.reduce((total, item) => total + item.count, 0);
+  const totalWorkTypes = model.workTypeBreakdown.reduce((total, item) => total + item.value, 0);
+  const metricCards = [
+    {
+      label: translate("dashboard.pipelineAmount"),
+      value: formatCompactAmount(model.cards.pipelineAmount),
+      detail: formatAmount(model.cards.pipelineAmount)
+    },
+    {
+      label: translate("dashboard.weightedForecast"),
+      value: formatCompactAmount(model.cards.weightedForecast),
+      detail: `${formatPercent(model.summary.forecastCoverage)} ${translate("dashboard.ofPipeline")}`
+    },
+    {
+      label: translate("dashboard.highConfidence"),
+      value: formatCompactAmount(model.cards.highConfidence),
+      detail: `${formatPercent(model.summary.highConfidenceShare)} ${translate("dashboard.ofForecast")}`
+    },
+    {
+      label: translate("dashboard.wins"),
+      value: formatCompactAmount(model.cards.wins),
+      detail: `${formatPercent(model.summary.winRate)} ${translate("dashboard.closedWinRate")}`
+    },
+    {
+      label: translate("dashboard.averageChance"),
+      value: formatPercent(model.summary.averageChance),
+      detail: formatLeadCount(model.cards.openCount)
+    },
+    {
+      label: translate("dashboard.atRiskExposure"),
+      value: formatCompactAmount(model.cards.atRiskAmount),
+      detail: `${formatNumber(model.summary.overdueCount)} ${translate("dashboard.requiresAttention")}`
+    }
+  ];
+
+  const healthMetrics = [
+    {
+      label: translate("dashboard.forecastCoverage"),
+      value: formatPercent(model.summary.forecastCoverage),
+      percent: model.summary.forecastCoverage,
+      color: "#274884"
+    },
+    {
+      label: translate("dashboard.highConfidenceShare"),
+      value: formatPercent(model.summary.highConfidenceShare),
+      percent: model.summary.highConfidenceShare,
+      color: "#19345f"
+    },
+    {
+      label: translate("dashboard.perpetualShare"),
+      value: formatPercent(model.summary.perpetualShare),
+      percent: model.summary.perpetualShare,
+      color: "#6d88b9"
+    },
+    {
+      label: translate("dashboard.riskShare"),
+      value: formatPercent(model.summary.riskShare),
+      percent: model.summary.riskShare,
+      color: "#b4423f"
+    }
+  ];
+
   return `
-    <section class="cards-grid panel">
-      <article class="metric-card">
-        <small>Open leads</small>
-        <strong>${model.cards.openCount}</strong>
-      </article>
-      <article class="metric-card">
-        <small>Pipeline amount</small>
-        <strong>${formatAmount(model.cards.pipelineAmount)}</strong>
-      </article>
-      <article class="metric-card">
-        <small>Weighted forecast</small>
-        <strong>${formatAmount(model.cards.weightedForecast)}</strong>
-      </article>
-      <article class="metric-card">
-        <small>Perpetual value</small>
-        <strong>${formatAmount(model.cards.perpetualValue)}</strong>
-      </article>
-      <article class="metric-card">
-        <small>Wins</small>
-        <strong>${formatAmount(model.cards.wins)}</strong>
-      </article>
-    </section>
-    <section class="dashboard-grid">
-      <article class="table-card">
-        <h3>Pipeline by owner</h3>
-        ${renderBarList(model.pipelineByOwner, "ownerSubjectId")}
-      </article>
-      <article class="table-card">
-        <h3>Stage mix</h3>
-        <div class="stat-grid">
-          ${model.stageMix.map((item) => `
-            <div class="stat-block">
-              <small>${escapeHtml(item.label)}</small>
-              <strong>${Math.round(item.value)}</strong>
-            </div>
-          `).join("") || `<p class="empty-state">No stage data available yet.</p>`}
+    <section class="dashboard-hero panel">
+      <div class="dashboard-hero-copy">
+        <div class="eyebrow">${escapeHtml(translate("dashboard.liveOverview"))}</div>
+        <h2 class="dashboard-hero-title">${escapeHtml(translate("dashboard.snapshotTitle", {
+          count: formatNumber(model.summary.activeLeadCount),
+          customers: formatNumber(model.summary.customerCount)
+        }))}</h2>
+        <p class="dashboard-hero-description">${escapeHtml(translate("dashboard.snapshotDescription", {
+          forecast: formatCompactAmount(model.cards.weightedForecast),
+          pipeline: formatCompactAmount(model.cards.pipelineAmount)
+        }))}</p>
+        <div class="dashboard-highlight-grid">
+          ${renderDashboardHighlight(translate("dashboard.openLeads"), formatNumber(model.cards.openCount))}
+          ${renderDashboardHighlight(translate("dashboard.dueSoon"), formatNumber(model.summary.dueSoonCount))}
+          ${renderDashboardHighlight(translate("dashboard.overdue"), formatNumber(model.summary.overdueCount))}
+          ${renderDashboardHighlight(translate("dashboard.winRate"), formatPercent(model.summary.winRate))}
         </div>
+      </div>
+      <div class="dashboard-hero-side">
+        <article class="dashboard-coverage-card">
+          ${renderProgressDial(
+            model.summary.forecastCoverage,
+            formatPercent(model.summary.forecastCoverage),
+            translate("dashboard.forecastCoverage"),
+            `${formatCompactAmount(model.cards.weightedForecast)} / ${formatCompactAmount(model.cards.pipelineAmount)}`
+          )}
+        </article>
+        <div class="dashboard-spotlight-grid">
+          ${renderSpotlightCard(
+            translate("dashboard.topOpportunity"),
+            model.spotlightLead ? model.spotlightLead.customer.name : translate("dashboard.emptySpotlight"),
+            model.spotlightLead ? model.spotlightLead.project.name : "",
+            model.spotlightLead ? formatAmount(model.spotlightLead.metrics.forecastAmount) : ""
+          )}
+          ${renderSpotlightCard(
+            translate("dashboard.topCustomer"),
+            model.spotlightCustomer ? model.spotlightCustomer.label : translate("dashboard.emptySpotlight"),
+            model.spotlightCustomer ? formatLeadCount(model.spotlightCustomer.count) : "",
+            model.spotlightCustomer ? formatAmount(model.spotlightCustomer.value) : ""
+          )}
+          ${renderSpotlightCard(
+            translate("dashboard.topOwner"),
+            model.spotlightOwner ? model.spotlightOwner.label : translate("dashboard.emptySpotlight"),
+            model.spotlightOwner ? formatLeadCount(model.spotlightOwner.count) : "",
+            model.spotlightOwner ? formatAmount(model.spotlightOwner.value) : ""
+          )}
+        </div>
+        <div class="dashboard-hero-actions">
+          <button type="button" class="ghost-button" data-action="export-report" ${state.exporting ? "disabled" : ""}>${escapeHtml(state.exporting ? translate("common.exporting") : translate("dashboard.report"))}</button>
+          <button type="button" class="primary-button" data-action="new-lead" data-testid="dashboard-new-lead">${escapeHtml(translate("nav.newLead"))}</button>
+          <button type="button" class="soft-button" data-view="list">${escapeHtml(translate("dashboard.exploreList"))}</button>
+        </div>
+      </div>
+    </section>
+    <section class="dashboard-kpi-grid">
+      ${metricCards.map((card) => renderDashboardMetricCard(card)).join("")}
+    </section>
+    <section class="dashboard-visual-grid dashboard-visual-grid-hero">
+      <article class="table-card analytics-card analytics-card-wide">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.pipelineFunnel"))}</h3>
+            <p>${escapeHtml(translate("dashboard.stageValueShare"))}</p>
+          </div>
+          <span class="chip">${escapeHtml(formatLeadCount(model.cards.openCount))}</span>
+        </div>
+        ${renderStageFunnel(model.stagePerformance)}
+      </article>
+      ${renderDonutPanel({
+        title: translate("dashboard.statusPortfolio"),
+        subtitle: translate("dashboard.valueMix"),
+        centerValue: formatNumber(totalStatuses),
+        centerLabel: translate("table.status"),
+        total: totalStatuses,
+        items: model.statusMix.map((item) => ({
+          ...item,
+          chartValue: item.count,
+          primaryValue: formatNumber(item.count),
+          secondaryValue: formatAmount(item.value),
+          filterKey: "offerStatus"
+        }))
+      })}
+    </section>
+    <section class="dashboard-visual-grid">
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.monthlyRunRate"))}</h3>
+            <p>${escapeHtml(translate("dashboard.monthlyForecast"))}</p>
+          </div>
+          <span class="chip">${escapeHtml(formatCompactAmount(model.cards.weightedForecast))}</span>
+        </div>
+        ${renderForecastColumns(model.monthlyForecast)}
+      </article>
+      ${renderDonutPanel({
+        title: translate("dashboard.workTypePortfolio"),
+        subtitle: translate("dashboard.workTypeConcentration"),
+        centerValue: formatCompactAmount(totalWorkTypes),
+        centerLabel: translate("dashboard.pipelineAmount"),
+        total: totalWorkTypes,
+        items: model.workTypeBreakdown.map((item) => ({
+          ...item,
+          chartValue: item.value,
+          primaryValue: formatAmount(item.value),
+          secondaryValue: formatLeadCount(item.count),
+          filterKey: "workTypeId"
+        }))
+      })}
+    </section>
+    <section class="dashboard-visual-grid">
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.ownerLeaderboard"))}</h3>
+            <p>${escapeHtml(translate("dashboard.pipelineByOwner"))}</p>
+          </div>
+        </div>
+        ${renderLeaderboard(model.pipelineByOwner, "ownerSubjectId")}
+      </article>
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.customerExposure"))}</h3>
+            <p>${escapeHtml(translate("dashboard.topCustomers"))}</p>
+          </div>
+        </div>
+        ${renderLeaderboard(model.pipelineByCustomer, "customerId")}
       </article>
     </section>
-    <section class="dashboard-grid">
-      <article class="table-card">
-        <h3>Top customers</h3>
-        ${renderBarList(model.pipelineByCustomer, "customerId")}
-      </article>
-      <article class="table-card">
-        <h3>Work type concentration</h3>
-        ${renderBarList(model.workTypeBreakdown, "workTypeId")}
-      </article>
-    </section>
-    <section class="dashboard-grid">
-      <article class="table-card">
-        <h3>Monthly forecast</h3>
-        ${renderBarList(model.monthlyForecast.map((item) => ({ ...item, label: formatMonth(item.label) })), null)}
-      </article>
-      <article class="table-card">
-        <h3>Risk widget</h3>
-        <div class="risk-list">
+    <section class="dashboard-visual-grid">
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.riskWidget"))}</h3>
+            <p>${escapeHtml(translate("dashboard.pipelinePressure"))}</p>
+          </div>
+          <span class="chip">${escapeHtml(formatCompactAmount(model.cards.atRiskAmount))}</span>
+        </div>
+        <div class="risk-list risk-list-rich">
           ${model.riskLeads.map((lead) => `
-            <button type="button" class="ghost-button risk-item" data-action="edit-lead" data-lead-id="${lead.id}">
+            <button type="button" class="ghost-button risk-item risk-item-rich" data-action="edit-lead" data-lead-id="${lead.id}">
               <span>
                 <strong>${escapeHtml(lead.customer.name)}</strong><br />
                 <span class="muted">${escapeHtml(lead.project.name)}</span>
               </span>
-              <span class="${lead.isIncomplete ? "warning-text" : "danger-text"}">
-                ${lead.isIncomplete ? "Incomplete" : lead.offerStatus}
+              <span class="risk-meta">
+                <span class="${lead.isIncomplete ? "warning-text" : "danger-text"}">
+                  ${lead.isIncomplete ? escapeHtml(translate("common.incomplete")) : escapeHtml(translateOfferStatus(lead.offerStatus))}
+                </span>
+                <span class="muted">${lead.dueDate ? escapeHtml(formatDate(lead.dueDate)) : escapeHtml(translate("common.noDueDate"))}</span>
               </span>
             </button>
-          `).join("") || `<p class="empty-state">No leads currently require immediate action.</p>`}
+          `).join("") || `<p class="empty-state">${escapeHtml(translate("common.noImmediateAction"))}</p>`}
         </div>
+      </article>
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("dashboard.portfolioHealth"))}</h3>
+            <p>${escapeHtml(translate("dashboard.valueMix"))}</p>
+          </div>
+        </div>
+        ${renderHealthMetrics(healthMetrics)}
       </article>
     </section>
   `;
 }
 
-function renderBarList(items, filterKey) {
-  if (!items.length) {
-    return `<p class="empty-state">No data available yet.</p>`;
+function renderDashboardHighlight(label, value) {
+  return `
+    <article class="dashboard-highlight">
+      <small>${escapeHtml(label)}</small>
+      <strong>${escapeHtml(value)}</strong>
+    </article>
+  `;
+}
+
+function renderDashboardMetricCard(card) {
+  return `
+    <article class="metric-card metric-card-rich">
+      <small>${escapeHtml(card.label)}</small>
+      <strong>${escapeHtml(card.value)}</strong>
+      <span class="metric-detail">${escapeHtml(card.detail)}</span>
+    </article>
+  `;
+}
+
+function renderSpotlightCard(title, primary, secondary, tertiary) {
+  return `
+    <article class="dashboard-spotlight">
+      <small>${escapeHtml(title)}</small>
+      <strong>${escapeHtml(primary || "—")}</strong>
+      ${secondary ? `<span class="muted">${escapeHtml(secondary)}</span>` : ""}
+      ${tertiary ? `<span class="dashboard-spotlight-value">${escapeHtml(tertiary)}</span>` : ""}
+    </article>
+  `;
+}
+
+function renderProgressDial(percent, valueText, label, detail) {
+  const safePercent = Math.max(0, Math.min(100, Number(percent || 0)));
+  const background = `conic-gradient(var(--accent) 0deg ${safePercent * 3.6}deg, rgba(19, 48, 66, 0.1) ${safePercent * 3.6}deg 360deg)`;
+  return `
+    <div class="progress-dial-shell">
+      <div class="progress-dial" style="background:${background}">
+        <div class="progress-dial-inner">
+          <strong>${escapeHtml(valueText)}</strong>
+          <span>${escapeHtml(label)}</span>
+        </div>
+      </div>
+      <div class="progress-dial-copy">
+        <strong>${escapeHtml(label)}</strong>
+        <span class="muted">${escapeHtml(detail)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderStageFunnel(items) {
+  if (!items.some((item) => item.count > 0)) {
+    return `<p class="empty-state">${escapeHtml(translate("dashboard.noStageData"))}</p>`;
+  }
+
+  return `
+    <div class="funnel-list">
+      ${items.map((item) => `
+        <article class="funnel-stage">
+          <div class="funnel-stage-header">
+            <strong>${escapeHtml(item.label)}</strong>
+            <span>${escapeHtml(formatPercent(item.shareAmount))}</span>
+          </div>
+          <div class="funnel-stage-track">
+            <span class="funnel-stage-fill" style="width:${item.shareAmount > 0 ? Math.max(8, item.shareAmount) : 0}%; background:${item.color};"></span>
+          </div>
+          <div class="funnel-stage-meta">
+            <span>${escapeHtml(formatLeadCount(item.count))}</span>
+            <strong>${escapeHtml(formatAmount(item.value))}</strong>
+            ${item.filterValue
+              ? `<button type="button" class="soft-button inline-filter-button" data-action="apply-dashboard-filter" data-filter-key="stage" data-filter-value="${item.filterValue}" data-filter-label="${escapeHtml(item.label)}">${escapeHtml(translate("dashboard.openFilteredList"))}</button>`
+              : ""}
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderDonutPanel({ title, subtitle, centerValue, centerLabel, total, items }) {
+  if (!items.length || !total) {
+    return `
+      <article class="table-card analytics-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(subtitle)}</p>
+          </div>
+        </div>
+        <p class="empty-state">${escapeHtml(translate("common.noData"))}</p>
+      </article>
+    `;
+  }
+
+  return `
+    <article class="table-card analytics-card">
+      <div class="card-heading">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(subtitle)}</p>
+        </div>
+      </div>
+      <div class="donut-card-grid">
+        ${renderDonutChart(items, total, centerValue, centerLabel)}
+        <div class="legend-list">
+          ${items.map((item) => `
+            <div class="legend-item">
+              <div class="legend-label">
+                <span class="legend-swatch" style="background:${item.color};"></span>
+                <span>${escapeHtml(item.label)}</span>
+              </div>
+              <div class="legend-values">
+                <strong>${escapeHtml(item.primaryValue)}</strong>
+                <span>${escapeHtml(item.secondaryValue)}</span>
+              </div>
+              ${item.filterKey && item.filterValue
+                ? `<button type="button" class="soft-button inline-filter-button" data-action="apply-dashboard-filter" data-filter-key="${item.filterKey}" data-filter-value="${item.filterValue}" data-filter-label="${escapeHtml(item.label)}">${escapeHtml(translate("dashboard.openFilteredList"))}</button>`
+                : ""}
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderDonutChart(items, total, centerValue, centerLabel) {
+  return `
+    <div class="donut-chart" style="background:${buildDonutGradient(items, total)}">
+      <div class="donut-chart-inner">
+        <strong>${escapeHtml(centerValue)}</strong>
+        <span>${escapeHtml(centerLabel)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildDonutGradient(items, total) {
+  if (!total) {
+    return "conic-gradient(rgba(19, 48, 66, 0.1) 0deg 360deg)";
+  }
+
+  let cursor = 0;
+  const segments = items
+    .filter((item) => item.chartValue > 0)
+    .map((item) => {
+      const start = cursor * 360;
+      const nextCursor = cursor + (item.chartValue / total);
+      const end = nextCursor * 360;
+      cursor = nextCursor;
+      return `${item.color} ${start}deg ${end}deg`;
+    });
+
+  if (!segments.length) {
+    return "conic-gradient(rgba(19, 48, 66, 0.1) 0deg 360deg)";
+  }
+
+  if (cursor < 1) {
+    segments.push(`rgba(19, 48, 66, 0.08) ${cursor * 360}deg 360deg`);
+  }
+
+  return `conic-gradient(${segments.join(", ")})`;
+}
+
+function renderForecastColumns(items) {
+  if (!items.length || !items.some((item) => item.value > 0)) {
+    return `<p class="empty-state">${escapeHtml(translate("common.noData"))}</p>`;
   }
 
   const max = Math.max(...items.map((item) => item.value), 1);
   return `
-    <div class="bar-list">
+    <div class="column-chart">
       ${items.map((item) => `
-        <div class="bar-row">
-          <div class="bar-meta">
-            <strong>${escapeHtml(item.label)}</strong>
-            <span>${formatAmount(item.value)}</span>
+        <div class="column-item">
+          <div class="column-shell">
+            <span class="column-bar" style="height:${item.value > 0 ? Math.max(8, (item.value / max) * 100) : 0}%"></span>
           </div>
-          <div class="bar-track">
-            <div class="bar-fill" style="width:${Math.max(6, (item.value / max) * 100)}%"></div>
-          </div>
-          ${filterKey ? `
-            <div class="inline-actions">
-              <button type="button" class="soft-button" data-action="apply-dashboard-filter" data-filter-key="${filterKey}" data-filter-value="${item.id}" data-filter-label="${escapeHtml(item.label)}">Open filtered list</button>
+          <strong class="column-value">${escapeHtml(formatCompactAmount(item.value))}</strong>
+          <span class="column-label">${escapeHtml(formatMonth(item.label))}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderLeaderboard(items, filterKey) {
+  if (!items.length) {
+    return `<p class="empty-state">${escapeHtml(translate("common.noData"))}</p>`;
+  }
+
+  const max = Math.max(...items.map((item) => item.value), 1);
+  return `
+    <div class="leaderboard-list">
+      ${items.map((item, index) => `
+        <article class="leaderboard-row">
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-main">
+            <div class="leaderboard-head">
+              <strong>${escapeHtml(item.label)}</strong>
+              <span>${escapeHtml(formatAmount(item.value))}</span>
             </div>
-          ` : ""}
+            <div class="leaderboard-bar">
+              <span class="leaderboard-bar-fill" style="width:${item.value > 0 ? Math.max(8, (item.value / max) * 100) : 0}%"></span>
+            </div>
+            <div class="leaderboard-foot">
+              <span class="muted">${escapeHtml(formatLeadCount(item.count))}</span>
+              <button type="button" class="soft-button inline-filter-button" data-action="apply-dashboard-filter" data-filter-key="${filterKey}" data-filter-value="${item.id}" data-filter-label="${escapeHtml(item.label)}">${escapeHtml(translate("dashboard.openFilteredList"))}</button>
+            </div>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderHealthMetrics(items) {
+  return `
+    <div class="health-list">
+      ${items.map((item) => `
+        <div class="health-row">
+          <div class="health-row-head">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </div>
+          <div class="health-track">
+            <span class="health-fill" style="width:${item.percent > 0 ? Math.max(6, item.percent) : 0}%; background:${item.color};"></span>
+          </div>
         </div>
       `).join("")}
     </div>
@@ -941,54 +2370,52 @@ function renderBarList(items, filterKey) {
 }
 
 function renderLeadList(leads) {
+  const customers = state.metadata?.customers || [];
+  const workTypes = state.metadata?.workTypes || [];
+
   return `
     <section class="panel">
-      <div class="toolbar">
-        <div>
-          <h2>Lead List</h2>
-          <p class="helper-text">Filter by owner, customer, work type, contract type, stage, status, due date, and amount. Dashboard drill-downs land here without clearing session filters.</p>
-        </div>
-        <div class="toolbar-actions">
-          <button type="button" class="primary-button" data-action="new-lead" data-testid="lead-list-new">New Lead</button>
-          <button type="button" class="ghost-button" data-action="reset-filters">Reset Filters</button>
-        </div>
-      </div>
       <div class="filter-grid">
-        ${renderFilterField("Search", "search", "search", "Search customer or project")}
-        ${renderSelectFilter("Owner", "ownerSubjectId", getOwners().map((owner) => ({ value: owner.subjectId, label: owner.displayName })))}
-        ${renderSelectFilter("Customer", "customerId", state.metadata.customers.map((customer) => ({ value: customer.id, label: customer.name })))}
-        ${renderSelectFilter("Work Type", "workTypeId", state.metadata.workTypes.filter((item) => item.isActive).map((workType) => ({ value: workType.id, label: workType.name })))}
-        ${renderSelectFilter("Contract Type", "contractType", [{ value: "perpetual", label: "Perpetual" }, { value: "auction", label: "Auction / One-time" }])}
-        ${renderSelectFilter("Stage", "stage", ["Before", "Approaching", "Sent"].map((value) => ({ value, label: value })))}
-        ${renderSelectFilter("Offer Status", "offerStatus", ["Open", "Win", "Lose", "Suspended", "Cancelled"].map((value) => ({ value, label: value })))}
-        ${renderFilterField("Due from", "date", "dueDateFrom")}
-        ${renderFilterField("Due to", "date", "dueDateTo")}
-        ${renderFilterField("Amount min", "number", "amountMin")}
-        ${renderFilterField("Amount max", "number", "amountMax")}
-        ${renderSelectFilter("Sort By", "sortBy", [
-          { value: "updatedAt", label: "Last Updated" },
-          { value: "dueDate", label: "Due Date" },
-          { value: "totalAmount", label: "Total Amount" },
-          { value: "forecastAmount", label: "Forecast Amount" },
-          { value: "chanceToWin", label: "Chance to Win" }
+        ${renderFilterField(translate("list.search"), "search", "search", translate("list.searchPlaceholder"))}
+        ${renderSelectFilter(translate("list.owner"), "ownerSubjectId", getOwners().map((owner) => ({ value: owner.subjectId, label: owner.displayName })))}
+        ${renderSelectFilter(translate("list.customer"), "customerId", customers.map((customer) => ({ value: customer.id, label: customer.name })))}
+        ${renderSelectFilter(translate("list.workType"), "workTypeId", workTypes.filter((item) => item.isActive).map((workType) => ({ value: workType.id, label: translateWorkType(workType) })))}
+        ${renderSelectFilter(translate("list.contractType"), "contractType", [{ value: "perpetual", label: translate("list.contract.perpetual") }, { value: "auction", label: translate("list.contract.auction") }])}
+        ${renderSelectFilter(translate("list.stage"), "stage", StageValues.map((value) => ({ value, label: translateStage(value) })))}
+        ${renderSelectFilter(translate("list.offerStatus"), "offerStatus", OfferStatusValues.map((value) => ({ value, label: translateOfferStatus(value) })))}
+        ${renderFilterField(translate("list.dueFrom"), "date", "dueDateFrom")}
+        ${renderFilterField(translate("list.dueTo"), "date", "dueDateTo")}
+        ${renderFilterField(translate("list.amountMin"), "number", "amountMin")}
+        ${renderFilterField(translate("list.amountMax"), "number", "amountMax")}
+        ${renderSelectFilter(translate("list.sortBy"), "sortBy", [
+          { value: "updatedAt", label: translate("list.sort.updatedAt") },
+          { value: "dueDate", label: translate("list.sort.dueDate") },
+          { value: "totalAmount", label: translate("list.sort.totalAmount") },
+          { value: "forecastAmount", label: translate("list.sort.forecastAmount") },
+          { value: "chanceToWin", label: translate("list.sort.chanceToWin") }
         ])}
+      </div>
+      <div class="list-actions">
+        <button type="button" class="primary-button list-action-button" data-action="new-lead" data-testid="lead-list-new">${escapeHtml(translate("nav.newLead"))}</button>
+        <button type="button" class="ghost-button list-action-button" data-action="export-leads" ${state.exporting ? "disabled" : ""}>${escapeHtml(state.exporting ? translate("common.exporting") : translate("list.export"))}</button>
+        <button type="button" class="ghost-button list-action-button" data-action="reset-filters">${escapeHtml(translate("list.resetFilters"))}</button>
       </div>
     </section>
     <section class="table-card">
-      <h3>${leads.length} matching lead${leads.length === 1 ? "" : "s"}</h3>
+      <p class="helper-text result-count">${escapeHtml(translate("list.resultsCount", { count: leads.length }))}</p>
       <div class="table-scroll">
         <table data-testid="lead-table">
           <thead>
             <tr>
-              <th>Customer / Project</th>
-              <th>Owner</th>
-              <th>Status</th>
-              <th>Stage</th>
-              <th>Total</th>
-              <th>Forecast</th>
-              <th>Chance</th>
-              <th>Due</th>
-              <th>Updated</th>
+              <th>${escapeHtml(translate("table.customerProject"))}</th>
+              <th>${escapeHtml(translate("list.owner"))}</th>
+              <th>${escapeHtml(translate("table.status"))}</th>
+              <th>${escapeHtml(translate("list.stage"))}</th>
+              <th>${escapeHtml(translate("table.total"))}</th>
+              <th>${escapeHtml(translate("table.forecast"))}</th>
+              <th>${escapeHtml(translate("table.chance"))}</th>
+              <th>${escapeHtml(translate("table.due"))}</th>
+              <th>${escapeHtml(translate("table.updated"))}</th>
               <th></th>
             </tr>
           </thead>
@@ -1000,18 +2427,18 @@ function renderLeadList(leads) {
                   <span class="muted">${escapeHtml(lead.project.name)}</span>
                 </td>
                 <td>${escapeHtml(lead.owner.displayName)}</td>
-                <td><span class="chip status-${lead.offerStatus.toLowerCase()}">${escapeHtml(lead.offerStatus)}</span></td>
-                <td>${escapeHtml(lead.stage || "Incomplete")}</td>
+                <td><span class="chip status-${lead.offerStatus.toLowerCase()}">${escapeHtml(translateOfferStatus(lead.offerStatus))}</span></td>
+                <td>${escapeHtml(lead.stage ? translateStage(lead.stage) : translate("common.incomplete"))}</td>
                 <td>${formatAmount(lead.metrics.totalAmount)}</td>
                 <td>${formatAmount(lead.metrics.forecastAmount)}</td>
                 <td>${formatPercent(lead.metrics.chanceToWin)}</td>
-                <td>${lead.dueDate ? formatDate(lead.dueDate) : "Not set"}</td>
+                <td>${lead.dueDate ? formatDate(lead.dueDate) : escapeHtml(translate("common.notSet"))}</td>
                 <td>${formatDateTime(lead.updatedAtUtc)}</td>
-                <td><button type="button" class="soft-button" data-action="edit-lead" data-lead-id="${lead.id}">Open</button></td>
+                <td><button type="button" class="soft-button" data-action="edit-lead" data-lead-id="${lead.id}">${escapeHtml(translate("common.open"))}</button></td>
               </tr>
             `).join("") || `
               <tr>
-                <td colspan="10" class="empty-state">No leads match the current filter set.</td>
+                <td colspan="10" class="empty-state">${escapeHtml(translate("list.noResults"))}</td>
               </tr>
             `}
           </tbody>
@@ -1022,77 +2449,83 @@ function renderLeadList(leads) {
 }
 
 function renderLeadForm(draftMetrics) {
-  const questions = state.metadata.qualificationQuestions || [];
-  const workTypeOptions = state.metadata.workTypes
-    .filter((item) => item.isActive || state.form.amountLines.some((line) => line.workTypeId === item.id))
+  const questions = state.metadata?.qualificationQuestions || [];
+  const customers = state.metadata?.customers || [];
+  const projects = state.metadata?.projects || [];
+  const workTypes = state.metadata?.workTypes || [];
+  const amountLines = state.form.amountLines || [];
+  const formHeader = getLeadFormHeaderContent();
+  const validationErrors = state.validationErrors || [];
+  const showValidationSummary = state.showValidationSummary && validationErrors.length > 0;
+  const validationFields = new Set(validationErrors.map((error) => error.fieldKey));
+  const workTypeOptions = workTypes
+    .filter((item) => item.isActive || amountLines.some((line) => line.workTypeId === item.id))
     .sort((left, right) => left.sortOrder - right.sortOrder);
-  const customerProjects = state.metadata.projects.filter((project) => project.customerId === state.form.customerId);
+  const customerProjects = projects.filter((project) => project.customerId === state.form.customerId);
 
   return `
-    <section class="toolbar">
-      <div>
-        <h2>${state.selectedLeadId ? "Edit Lead" : "New Lead"}</h2>
-        <p class="helper-text">Customer comes from CRM data. Project can reuse a customer project or create a new unique one. Calculated values are previewed here but remain server-authoritative when saved.</p>
-      </div>
-      <div class="toolbar-actions">
-        <button type="button" class="ghost-button" data-action="cancel-form">Back to List</button>
-        <button type="button" class="primary-button" data-action="save-lead" data-testid="save-lead-button">${state.saving ? "Saving..." : "Save Lead"}</button>
-      </div>
-    </section>
-    <section class="form-layout">
-      <div>
-        <article class="panel form-section">
-          <h3>Business context</h3>
+    <section class="lead-modal-overlay">
+      <div class="lead-modal" data-modal-root role="dialog" aria-modal="true" aria-labelledby="lead-form-title" data-testid="lead-form-modal">
+        <form class="lead-modal-shell" data-lead-form>
+          <header class="lead-modal-header">
+            <div class="lead-modal-header-copy">
+              <h2 id="lead-form-title" class="lead-modal-title">${escapeHtml(formHeader.header)}</h2>
+              <p class="lead-modal-subtitle">${escapeHtml(formHeader.subHeader)}</p>
+            </div>
+            <button type="button" class="icon-button" data-action="cancel-form" data-testid="close-lead-modal" aria-label="${escapeHtml(translate("common.close"))}" title="${escapeHtml(translate("common.close"))}">X</button>
+          </header>
+          <div class="lead-modal-body">
+            <section class="form-layout">
+              <div>
+                <article class="panel form-section">
           <div class="field-grid">
             <div class="field">
-              <label for="customer">Customer</label>
-              <select id="customer" data-form-field="customerId" data-testid="customer-select">
-                <option value="">Select CRM customer</option>
-                ${state.metadata.customers.map((customer) => `
-                  <option value="${customer.id}" ${state.form.customerId === customer.id ? "selected" : ""}>
-                    ${escapeHtml(customer.name)}
-                  </option>
-                `).join("")}
-              </select>
+              <label for="customer-search">${escapeHtml(translate("form.customer"))}</label>
+              <input id="customer-search" list="customer-suggestions" value="${escapeHtml(state.form.customerSearch || "")}" data-form-field="customerSearch" data-testid="customer-input" placeholder="${escapeHtml(translate("form.customerPlaceholder"))}" autocomplete="off" ${validationFields.has("customerId") ? "aria-invalid=\"true\"" : ""} />
+              <datalist id="customer-suggestions">
+                ${customers.map((customer) => `<option value="${escapeHtml(customer.name)}"></option>`).join("")}
+              </datalist>
             </div>
             <div class="field">
-              <label for="project">Project</label>
-              <input id="project" list="project-suggestions" value="${escapeHtml(state.form.projectName)}" data-form-field="projectName" data-testid="project-input" placeholder="Reuse or create a project" />
+              <label for="project">${escapeHtml(translate("form.project"))}</label>
+              <input id="project" list="project-suggestions" value="${escapeHtml(state.form.projectName)}" data-form-field="projectName" data-testid="project-input" placeholder="${escapeHtml(translate("form.projectPlaceholder"))}" ${validationFields.has("projectName") ? "aria-invalid=\"true\"" : ""} />
               <datalist id="project-suggestions">
                 ${customerProjects.map((project) => `<option value="${escapeHtml(project.name)}"></option>`).join("")}
               </datalist>
             </div>
-            <div class="field">
-              <label for="offer-status">Offer Status</label>
-              <select id="offer-status" data-form-field="offerStatus" data-testid="offer-status-select">
-                ${["Open", "Win", "Lose", "Suspended", "Cancelled"].map((status) => `
-                  <option value="${status}" ${state.form.offerStatus === status ? "selected" : ""}>${status}</option>
+            <fieldset class="binary-fieldset field-span-full">
+              <legend>${escapeHtml(translate("form.offerStatus"))}</legend>
+              <div class="segmented-options" data-testid="offer-status-picker">
+                ${OfferStatusValues.map((status) => `
+                  <label>
+                    <input type="radio" name="offer-status" value="${status}" data-toggle-field="offerStatus" ${state.form.offerStatus === status ? "checked" : ""} />
+                    ${escapeHtml(translateOfferStatus(status))}
+                  </label>
                 `).join("")}
-              </select>
-            </div>
+              </div>
+            </fieldset>
           </div>
           <div class="field">
-            <label for="comments">Comments</label>
-            <textarea id="comments" data-form-field="comments" data-testid="comments-input" placeholder="Capture deal context, blockers, and action items.">${escapeHtml(state.form.comments)}</textarea>
+            <label for="comments">${escapeHtml(translate("form.comments"))}</label>
+            <textarea id="comments" data-form-field="comments" data-testid="comments-input" placeholder="${escapeHtml(translate("form.commentsPlaceholder"))}">${escapeHtml(state.form.comments)}</textarea>
           </div>
         </article>
 
         <article class="panel form-section">
-          <h3>Qualification answers</h3>
           <div class="summary-grid">
             ${questions.map((question, index) => `
               <fieldset class="binary-fieldset">
-                <legend>${index + 1}. ${escapeHtml(question.label)}</legend>
+                <legend>${index + 1}. ${escapeHtml(translateQualificationQuestion(question))}</legend>
                 <div class="binary-options">
                   <label>
                     <input type="radio" name="question-${question.code}" value="true" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === true ? "checked" : ""} />
-                    Yes
+                    ${escapeHtml(translate("common.yes"))}
                   </label>
                   <label>
                     <input type="radio" name="question-${question.code}" value="false" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === false ? "checked" : ""} />
-                    No
+                    ${escapeHtml(translate("common.no"))}
                   </label>
-                  <span class="chip">${question.isOverrideRule ? "Override rule" : `${question.weight}% weight`}</span>
+                  <span class="chip">${question.isOverrideRule ? escapeHtml(translate("form.overrideRule")) : escapeHtml(translate("form.weight", { value: question.weight }))}</span>
                 </div>
               </fieldset>
             `).join("")}
@@ -1100,85 +2533,109 @@ function renderLeadForm(draftMetrics) {
         </article>
 
         <article class="panel form-section">
-          <h3>Pipeline stage and outcome</h3>
+          <h3>${escapeHtml(translate("form.pipelineStageOutcome"))}</h3>
           <div class="field-grid">
             <fieldset class="binary-fieldset">
-              <legend>Stage</legend>
+              <legend>${escapeHtml(translate("form.stage"))}</legend>
               <div class="stage-picker" data-testid="stage-picker">
-                ${["Before", "Approaching", "Sent"].map((stage) => `
+                ${StageValues.map((stage) => `
                   <label>
                     <input type="radio" name="lead-stage" value="${stage}" data-toggle-field="stage" ${state.form.stage === stage ? "checked" : ""} />
-                    ${stage}
+                    ${escapeHtml(translateStage(stage))}
                   </label>
                 `).join("")}
               </div>
             </fieldset>
             <fieldset class="binary-fieldset">
-              <legend>Perpetual contract?</legend>
+              <legend>${escapeHtml(translate("form.perpetualContract"))}</legend>
               <div class="binary-options" data-testid="perpetual-toggle">
                 <label>
                   <input type="radio" name="is-perpetual" value="true" data-toggle-field="isPerpetual" ${state.form.isPerpetual === "true" ? "checked" : ""} />
-                  Yes
+                  ${escapeHtml(translate("common.yes"))}
                 </label>
                 <label>
                   <input type="radio" name="is-perpetual" value="false" data-toggle-field="isPerpetual" ${state.form.isPerpetual === "false" ? "checked" : ""} />
-                  No
+                  ${escapeHtml(translate("common.no"))}
                 </label>
               </div>
             </fieldset>
             <div class="field">
-              <label for="due-date">Due date</label>
+              <label for="due-date">${escapeHtml(translate("form.dueDate"))}</label>
               <input id="due-date" type="date" value="${escapeHtml(state.form.dueDate)}" data-form-field="dueDate" data-testid="due-date-input" />
             </div>
           </div>
           <div class="field-grid">
             <div class="field">
-              <label for="actual-awarded">Actual awarded amount</label>
-              <input id="actual-awarded" type="number" min="0" step="0.01" value="${escapeHtml(state.form.actualAwardedAmount)}" data-form-field="actualAwardedAmount" data-testid="actual-awarded-input" />
+              <label for="actual-awarded">${escapeHtml(translate("form.actualAwardedAmount"))}</label>
+              <input id="actual-awarded" class="amount-input mono" type="text" inputmode="decimal" pattern="${AmountInputPatternAttribute}" dir="ltr" value="${escapeHtml(state.form.actualAwardedAmount)}" data-form-field="actualAwardedAmount" data-testid="actual-awarded-input" autocomplete="off" ${validationFields.has("actualAwardedAmount") ? "aria-invalid=\"true\"" : ""} />
             </div>
           </div>
         </article>
 
         <article class="panel form-section">
-          <div class="meta-row">
-            <div>
-              <h3>Amount lines</h3>
-              <p class="helper-text">Amounts are captured per work type. Total amount is always calculated from these lines.</p>
-            </div>
-            <button type="button" class="soft-button" data-action="add-line" data-testid="add-amount-line">Add line</button>
+          <div>
+            <h3>${escapeHtml(translate("form.amountLines"))}</h3>
+            <p class="helper-text">${escapeHtml(translate("form.amountLinesHelp"))}</p>
           </div>
-          <div class="amount-lines">
-            ${state.form.amountLines.map((line, index) => `
-              <div class="amount-line" data-testid="amount-line-${index}">
-                <div class="field">
-                  <label>Work Type</label>
-                  <select data-line-field="workTypeId" data-index="${index}" data-testid="amount-line-worktype-${index}">
-                    <option value="">Select type</option>
-                    ${workTypeOptions.map((workType) => `
-                      <option value="${workType.id}" ${line.workTypeId === workType.id ? "selected" : ""}>${escapeHtml(workType.name)}</option>
-                    `).join("")}
-                  </select>
+          <div class="amount-lines-table">
+            <div class="amount-lines-header" aria-hidden="true">
+              <span class="amount-lines-header-spacer amount-lines-header-add"></span>
+              <span class="amount-lines-header-cell amount-lines-header-note">${escapeHtml(translate("form.note"))}</span>
+              <span class="amount-lines-header-cell amount-lines-header-amount">${escapeHtml(translate("form.totalAmount"))}</span>
+              <span class="amount-lines-header-cell amount-lines-header-worktype">${escapeHtml(translate("list.workType"))}</span>
+              <span class="amount-lines-header-spacer amount-lines-header-remove"></span>
+            </div>
+            <div class="amount-lines">
+              ${state.form.amountLines.map((line, index) => `
+                <div class="amount-line" data-testid="amount-line-${index}">
+                  <button type="button" class="icon-button line-remove-button" data-action="remove-line" data-index="${index}" tabindex="-1" aria-label="${escapeHtml(translate("common.remove"))}" title="${escapeHtml(translate("common.remove"))}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M9.5 4.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                      <path d="M6 7.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                      <path d="M8 7.5v10a1.5 1.5 0 0 0 1.5 1.5h5A1.5 1.5 0 0 0 16 17.5v-10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                      <path d="M10 10.5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                      <path d="M14 10.5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    </svg>
+                  </button>
+                  <div class="field amount-line-field amount-line-field-worktype">
+                    <select aria-label="${escapeHtml(translate("list.workType"))}" data-line-field="workTypeId" data-index="${index}" data-testid="amount-line-worktype-${index}" ${validationFields.has(`amountLines.${index}.workTypeId`) ? "aria-invalid=\"true\"" : ""}>
+                      <option value="">${escapeHtml(translate("common.selectType"))}</option>
+                      ${workTypeOptions.map((workType) => `
+                        <option value="${workType.id}" ${line.workTypeId === workType.id ? "selected" : ""}>${escapeHtml(translateWorkType(workType))}</option>
+                      `).join("")}
+                    </select>
+                  </div>
+                  <div class="field amount-line-field amount-line-field-amount">
+                    <input class="amount-input mono" aria-label="${escapeHtml(translate("form.totalAmount"))}" type="text" inputmode="decimal" pattern="${AmountInputPatternAttribute}" dir="ltr" value="${escapeHtml(line.amount)}" data-line-field="amount" data-index="${index}" data-testid="amount-line-amount-${index}" autocomplete="off" ${validationFields.has(`amountLines.${index}.amount`) ? "aria-invalid=\"true\"" : ""} />
+                  </div>
+                  <div class="field amount-line-field amount-line-field-note">
+                    <input aria-label="${escapeHtml(translate("form.note"))}" value="${escapeHtml(line.note)}" data-line-field="note" data-index="${index}" data-testid="amount-line-note-${index}" placeholder="${escapeHtml(translate("form.notePlaceholder"))}" />
+                  </div>
+                  ${index === state.form.amountLines.length - 1
+                    ? `
+                      <button
+                        type="button"
+                        class="icon-button add-line-button"
+                        data-action="add-line"
+                        data-testid="add-amount-line"
+                        aria-label="${escapeHtml(translate("form.addLine"))}"
+                        title="${escapeHtml(translate("form.addLine"))}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M12 5v14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                          <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                        </svg>
+                      </button>
+                    `
+                    : `<span class="add-line-placeholder" aria-hidden="true"></span>`}
                 </div>
-                <div class="field">
-                  <label>Amount</label>
-                  <input type="number" min="0" step="0.01" value="${escapeHtml(line.amount)}" data-line-field="amount" data-index="${index}" data-testid="amount-line-amount-${index}" />
-                </div>
-                <div class="field">
-                  <label>Note</label>
-                  <input value="${escapeHtml(line.note)}" data-line-field="note" data-index="${index}" data-testid="amount-line-note-${index}" placeholder="Optional line note" />
-                </div>
-                <div class="field">
-                  <label>&nbsp;</label>
-                  <button type="button" class="danger-button" data-action="remove-line" data-index="${index}">Remove</button>
-                </div>
-              </div>
-            `).join("")}
+              `).join("")}
+            </div>
           </div>
         </article>
 
         ${state.form.auditTrail.length ? `
           <article class="panel form-section">
-            <h3>Audit trail</h3>
+            <h3>${escapeHtml(translate("form.auditTrail"))}</h3>
             <div class="audit-list">
               ${state.form.auditTrail.map((entry) => `
                 <div class="audit-item">
@@ -1192,37 +2649,54 @@ function renderLeadForm(draftMetrics) {
             </div>
           </article>
         ` : ""}
-      </div>
+              </div>
 
-      <aside class="summary-grid">
-        <article class="sidebar-card">
-          <h3>Live calculations</h3>
+              <aside class="summary-grid">
+                <article class="sidebar-card">
+          <h3>${escapeHtml(translate("form.liveCalculations"))}</h3>
           <div class="summary-list">
-            ${renderSummaryRow("Total Amount", formatAmount(draftMetrics.totalAmount))}
-            ${renderSummaryRow("Qualification Score", formatPercent(draftMetrics.qualificationScore))}
-            ${renderSummaryRow("Qualification Contribution", formatPercent(draftMetrics.qualificationContribution))}
-            ${renderSummaryRow("Stage Contribution", formatPercent(draftMetrics.stageContribution))}
-            ${renderSummaryRow("Chance to Win", formatPercent(draftMetrics.chanceToWin))}
-            ${renderSummaryRow("Forecast Amount", formatAmount(draftMetrics.forecastAmount))}
-            ${renderSummaryRow("High-Confidence Forecast", formatAmount(draftMetrics.highConfidence))}
-            ${renderSummaryRow("Won Amount", formatAmount(draftMetrics.wonAmount))}
+            ${renderSummaryRow(translate("form.totalAmount"), formatAmount(draftMetrics.totalAmount))}
+            ${renderSummaryRow(translate("form.qualificationScore"), formatPercent(draftMetrics.qualificationScore))}
+            ${renderSummaryRow(translate("form.qualificationContribution"), formatPercent(draftMetrics.qualificationContribution))}
+            ${renderSummaryRow(translate("form.stageContribution"), formatPercent(draftMetrics.stageContribution))}
+            ${renderSummaryRow(translate("form.chanceToWin"), formatPercent(draftMetrics.chanceToWin))}
+            ${renderSummaryRow(translate("form.forecastAmount"), formatAmount(draftMetrics.forecastAmount))}
+            ${renderSummaryRow(translate("form.highConfidenceForecast"), formatAmount(draftMetrics.highConfidence))}
+            ${renderSummaryRow(translate("form.wonAmount"), formatAmount(draftMetrics.wonAmount))}
           </div>
         </article>
         <article class="sidebar-card">
-          <h3>Forecast inclusion</h3>
+          <h3>${escapeHtml(translate("form.forecastInclusion"))}</h3>
           ${draftMetrics.missingFields.length
-            ? `<p class="warning-text">Incomplete until these fields are supplied:</p>
+            ? `<p class="warning-text">${escapeHtml(translate("form.forecastIncomplete"))}</p>
                <div class="chip-row">
                  ${draftMetrics.missingFields.map((field) => `<span class="chip">${escapeHtml(field)}</span>`).join("")}
                </div>`
-            : `<p class="muted">This lead is complete enough to participate in forecast widgets.</p>`}
+            : `<p class="muted">${escapeHtml(translate("form.forecastComplete"))}</p>`}
         </article>
-        <article class="sidebar-card">
-          <h3>Current owner</h3>
-          <strong>${escapeHtml(state.shellContext.user.displayName)}</strong>
-          <p class="helper-text">${escapeHtml(state.shellContext.user.email)}</p>
-        </article>
-      </aside>
+              </aside>
+            </section>
+            <p class="keyboard-hint keyboard-hint-bottom">${escapeHtml(translate("form.keyboardHint"))}</p>
+          </div>
+          <footer class="lead-modal-footer">
+            ${showValidationSummary ? `
+              <div class="validation-summary" aria-live="polite">
+                <h4>${escapeHtml(translate("validation.summaryTitle"))}</h4>
+                <div class="validation-summary-list">
+                  ${validationErrors.map((error) => `
+                    <button type="button" class="validation-link" data-action="focus-validation" data-selector="${escapeHtml(error.selector)}">${escapeHtml(error.message)}</button>
+                  `).join("")}
+                </div>
+              </div>
+            ` : ""}
+            <div class="lead-modal-footer-actions">
+              ${validationErrors.length ? `<button type="button" class="warning-button" data-action="toggle-validation-summary" data-testid="validation-toggle">${escapeHtml(translate("validation.summaryButton", { count: validationErrors.length }))}</button>` : ""}
+              <button type="button" class="ghost-button" data-action="cancel-form" data-testid="cancel-lead-modal">${escapeHtml(translate("common.cancel"))}</button>
+              <button type="submit" class="primary-button" data-testid="save-lead-button">${escapeHtml(state.saving ? translate("form.saving") : translate("form.saveLead"))}</button>
+            </div>
+          </footer>
+        </form>
+      </div>
     </section>
   `;
 }
@@ -1250,7 +2724,7 @@ function renderSelectFilter(label, field, options) {
     <div class="field">
       <label>${escapeHtml(label)}</label>
       <select data-filter-field="${field}">
-        <option value="">All</option>
+        <option value="">${escapeHtml(translate("common.all"))}</option>
         ${options.map((option) => `
           <option value="${option.value}" ${state.filters[field] === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>
         `).join("")}
@@ -1260,28 +2734,53 @@ function renderSelectFilter(label, field, options) {
 }
 
 function formatAmount(value) {
-  return `${amountFormat.format(Number(value || 0))}`;
+  return new Intl.NumberFormat(currentLocale(), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+}
+
+function formatCompactAmount(value) {
+  return new Intl.NumberFormat(currentLocale(), {
+    notation: "compact",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  }).format(Number(value || 0));
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat(currentLocale(), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+}
+
+function formatLeadCount(value) {
+  return translate("dashboard.leadsCount", { count: formatNumber(value) });
 }
 
 function formatPercent(value) {
-  return `${Math.round(Number(value || 0))}%`;
+  return `${new Intl.NumberFormat(currentLocale(), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(Math.round(Number(value || 0)))}%`;
 }
 
 function formatDate(value) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString();
+  return new Date(`${value}T00:00:00`).toLocaleDateString(currentLocale());
 }
 
 function formatDateTime(value) {
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(currentLocale());
 }
 
 function formatMonth(value) {
   if (!value) {
-    return "No due date";
+    return translate("common.noDueDate");
   }
 
   const [year, month] = value.split("-");
-  return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(undefined, {
+  return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(currentLocale(), {
     month: "short",
     year: "numeric"
   });

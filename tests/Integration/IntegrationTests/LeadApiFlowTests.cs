@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ClosedXML.Excel;
 using Magalcom.Crm.Shared.Contracts.Leads;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.TestHost;
@@ -65,8 +66,8 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
         Assert.NotNull(metadata);
 
         var customer = metadata!.Customers.First();
-        var detection = metadata.WorkTypes.First(item => item.Code == "DETECT");
-        var software = metadata.WorkTypes.First(item => item.Code == "SOFT");
+        var dataCenter = metadata.WorkTypes.First(item => item.Code == "DataCenter");
+        var communications = metadata.WorkTypes.First(item => item.Code == "Communications");
 
         var createRequest = new CreateLeadRequest(
             customer.Id,
@@ -89,8 +90,8 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
             null,
             new[]
             {
-                new LeadAmountLineRequest(null, detection.Id, 80000m, "Detection scope"),
-                new LeadAmountLineRequest(null, software.Id, 20000m, "Software scope")
+                new LeadAmountLineRequest(null, dataCenter.Id, 80000m, "Data center scope"),
+                new LeadAmountLineRequest(null, communications.Id, 20000m, "Communications scope")
             });
 
         using var createResponse = await client.PostAsJsonAsync("/api/v1/leads", createRequest, JsonOptions);
@@ -123,8 +124,8 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
             102000m,
             new[]
             {
-                new LeadAmountLineRequest(created.AmountLines.First().Id, detection.Id, 90000m, "Expanded detection scope"),
-                new LeadAmountLineRequest(null, software.Id, 30000m, "Expanded software scope")
+                new LeadAmountLineRequest(created.AmountLines.First().Id, dataCenter.Id, 90000m, "Expanded data center scope"),
+                new LeadAmountLineRequest(null, communications.Id, 30000m, "Expanded communications scope")
             });
 
         using var updateResponse = await client.PutAsJsonAsync($"/api/v1/leads/{created.Id}", updateRequest, JsonOptions);
@@ -144,6 +145,71 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
         Assert.Equal(updated.Project.Name, fetched.Project.Name);
         Assert.Equal(updated.Metrics.ForecastAmount, fetched.Metrics.ForecastAmount);
         Assert.Contains(fetched.AuditTrail, entry => entry.Action == "Updated");
+    }
+
+    [Fact]
+    public async Task LeadExport_ShouldReturnWorkbookWithSummaryAndFilteredDetails()
+    {
+        using var client = _factory.CreateClient();
+
+        var metadata = await client.GetFromJsonAsync<LeadModuleMetadataDto>("/api/v1/leads/metadata", JsonOptions);
+        Assert.NotNull(metadata);
+
+        var customer = metadata!.Customers.Single(item => item.Name == "Fabrikam Energy");
+        var workType = metadata.WorkTypes.First(item => item.Code == "Security");
+
+        var createRequest = new CreateLeadRequest(
+            customer.Id,
+            null,
+            "Export Verification Lead",
+            "Created to verify workbook export.",
+            new[]
+            {
+                new LeadQualificationAnswerRequest("knows-customer-personally", true),
+                new LeadQualificationAnswerRequest("returning-customer", false),
+                new LeadQualificationAnswerRequest("involved-in-planning", true),
+                new LeadQualificationAnswerRequest("consultant-relationship", true),
+                new LeadQualificationAnswerRequest("project-management-relationship", false),
+                new LeadQualificationAnswerRequest("customer-under-price-list", false)
+            },
+            LeadStage.Sent,
+            false,
+            new DateOnly(2026, 7, 15),
+            LeadOfferStatus.Open,
+            null,
+            new[]
+            {
+                new LeadAmountLineRequest(null, workType.Id, 250000m, "Export security scope")
+            });
+
+        using var createResponse = await client.PostAsJsonAsync("/api/v1/leads", createRequest, JsonOptions);
+        createResponse.EnsureSuccessStatusCode();
+
+        using var exportResponse = await client.GetAsync($"/api/v1/leads/export?customerId={customer.Id}&sortBy=totalAmount&locale=en");
+        exportResponse.EnsureSuccessStatusCode();
+
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", exportResponse.Content.Headers.ContentType?.MediaType);
+
+        var workbookBytes = await exportResponse.Content.ReadAsByteArrayAsync();
+        using var workbook = new XLWorkbook(new MemoryStream(workbookBytes));
+
+        var summarySheet = workbook.Worksheet("Summary");
+        var detailsSheet = workbook.Worksheet("Details");
+
+        Assert.Equal("Total", summarySheet.Cell("A6").GetString());
+        Assert.Equal(1, summarySheet.Cell("B6").GetValue<int>());
+        Assert.Equal(250000m, summarySheet.Cell("C6").GetValue<decimal>());
+        Assert.Equal("Integration Tester", summarySheet.Cell("A7").GetString());
+        Assert.Equal(1, summarySheet.Cell("B7").GetValue<int>());
+
+        Assert.Equal("Integration Tester", detailsSheet.Cell("A2").GetString());
+        Assert.Equal("Fabrikam Energy", detailsSheet.Cell("B2").GetString());
+        Assert.Equal("Export Verification Lead", detailsSheet.Cell("C2").GetString());
+        Assert.Equal(250000m, detailsSheet.Cell("H2").GetValue<decimal>());
+
+        var detailsTable = detailsSheet.Table("LeadDetails");
+        Assert.True(detailsTable.ShowAutoFilter);
+        Assert.Equal(1, detailsTable.DataRange.RowCount());
     }
 }
 

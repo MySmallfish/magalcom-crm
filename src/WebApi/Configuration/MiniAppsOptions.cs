@@ -15,5 +15,6 @@ public sealed class MiniAppOptionsItem
     public string Url { get; set; } = string.Empty;
     public string Origin { get; set; } = string.Empty;
     public bool Enabled { get; set; } = true;
+    public bool UseFullScreenLayout { get; set; }
     public List<string> RequiredRoles { get; set; } = [];
 }

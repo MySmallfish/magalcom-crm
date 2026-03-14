@@ -19,6 +19,17 @@ export function createMiniAppBridge(eventBus, commandRegistry, allowedOrigins) {
     }
 
     try {
+      if (!commandRegistry.canExecute({
+        name: message.command,
+        payload: message.payload,
+        metadata: {
+          source: "mini-app",
+          origin: event.origin
+        }
+      })) {
+        throw new Error(`Command cannot execute: ${message.command}`);
+      }
+
       await commandRegistry.execute({
         name: message.command,
         payload: message.payload,

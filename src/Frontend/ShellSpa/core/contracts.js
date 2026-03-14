@@ -11,7 +11,8 @@ export const ShellCommandNames = Object.freeze({
   OpenProfile: "profile.open",
   Logout: "auth.logout",
   Notify: "shell.notify",
-  OpenMiniApp: "miniapp.open"
+  OpenMiniApp: "miniapp.open",
+  SetPageHeader: "shell.header.set"
 });
 
 export const ShellEventNames = Object.freeze({

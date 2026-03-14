@@ -21,6 +21,7 @@ import { createShellActor } from "../core/state-machine.js";
 import { loadTemplate } from "../core/template-loader.js";
 
 const LOCALE_STORAGE_KEY = "magalcom.crm.locale";
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "magalcom.crm.sidebar-collapsed";
 
 function hasRoute(items, route) {
   return (items || []).some((item) => item.route === route || hasRoute(item.children || [], route));
@@ -44,11 +45,17 @@ export class McShellApp extends HTMLElement {
   #routeRenderSignature = "";
   #routeRenderToken = 0;
   #unsubscribers = [];
+  #pageHeaderState = { title: "", subtitle: "" };
+  #activeMiniAppHeaderOverride = null;
+  #sidebarCollapsed = false;
 
   #ui = {
+    sidebar: null,
     sideMenu: null,
     pageHost: null,
+    sidebarToggle: null,
     profileTrigger: null,
+    profileAvatar: null,
     profileName: null,
     profileEmail: null,
     logoutButton: null,
@@ -77,6 +84,7 @@ export class McShellApp extends HTMLElement {
     this.#config = await this.#loadConfiguration();
     this.#locale = this.#readSavedLocale();
     this.#direction = getDirection(this.#locale);
+    this.#sidebarCollapsed = this.#readSavedSidebarCollapsed();
     this.#eventBus = new EventBus();
     this.#commandRegistry = new CommandRegistry({ eventBus: this.#eventBus });
     this.#pluginRegistry = new PluginRegistry();
@@ -142,6 +150,22 @@ export class McShellApp extends HTMLElement {
     }
   }
 
+  #readSavedSidebarCollapsed() {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  #persistSidebarCollapsed(value) {
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(Boolean(value)));
+    } catch {
+      // Ignore sidebar preference persistence failures in local development.
+    }
+  }
+
   #localizeSitemap(items) {
     return (items || []).map((item) => ({
       ...item,
@@ -177,7 +201,7 @@ export class McShellApp extends HTMLElement {
     this.setAttribute("dir", this.#direction);
     document.documentElement.lang = this.#locale;
     document.documentElement.dir = this.#direction;
-    document.title = this.#translate("chrome.brand");
+    this.#applyDocumentTitle(this.#pageHeaderState.title);
 
     if (!this.shadowRoot) {
       return;
@@ -207,6 +231,48 @@ export class McShellApp extends HTMLElement {
     }
 
     this.#applySidebarUser(this.#state?.getSnapshot().context.user || null);
+    this.#applySidebarChrome();
+  }
+
+  #applyDocumentTitle(title) {
+    const brand = this.#translate("chrome.brand");
+    document.title = title ? `${title} | ${brand}` : brand;
+  }
+
+  #applyPageHeader({ title, subtitle }) {
+    const titleElement = this.#ui.pageHost?.querySelector(".page-title");
+    const subtitleElement = this.#ui.pageHost?.querySelector(".page-subtitle");
+    const normalizedTitle = String(title || "").trim();
+    const normalizedSubtitle = String(subtitle || "").trim();
+
+    if (titleElement) {
+      titleElement.textContent = normalizedTitle;
+    }
+
+    if (subtitleElement) {
+      subtitleElement.textContent = normalizedSubtitle;
+      subtitleElement.hidden = normalizedSubtitle.length === 0;
+    }
+
+    this.#pageHeaderState = {
+      title: normalizedTitle,
+      subtitle: normalizedSubtitle
+    };
+    this.#applyDocumentTitle(normalizedTitle);
+  }
+
+  #syncPageHeaderFromDom() {
+    const pageShell = this.#ui.pageHost?.querySelector(".page-shell");
+    if (!pageShell) {
+      this.#pageHeaderState = { title: "", subtitle: "" };
+      this.#applyDocumentTitle("");
+      return;
+    }
+
+    this.#applyPageHeader({
+      title: pageShell.dataset.pageTitle || "",
+      subtitle: pageShell.dataset.pageSubtitle || ""
+    });
   }
 
   #applySidebarUser(user) {
@@ -214,37 +280,61 @@ export class McShellApp extends HTMLElement {
       return;
     }
 
-    this.#ui.profileName.textContent = user?.displayName || this.#translate("profile.guest");
+    const displayName = user?.displayName || this.#translate("profile.guest");
+    this.#ui.profileName.textContent = displayName;
     this.#ui.profileEmail.textContent = user?.email || "";
+    if (this.#ui.profileAvatar) {
+      this.#ui.profileAvatar.textContent = displayName.trim().charAt(0).toUpperCase() || "M";
+    }
   }
 
-  #createPageScaffold({ breadcrumb, title, subtitle }) {
+  #createPageScaffold({ title, subtitle, stretchBody = false, hideHeader = false, flush = false }) {
     const pageShell = document.createElement("section");
     pageShell.className = "page-shell";
+    pageShell.dataset.pageTitle = title;
+    pageShell.dataset.pageSubtitle = subtitle || "";
 
-    const header = document.createElement("header");
-    header.className = "page-header";
+    if (stretchBody) {
+      pageShell.classList.add("page-shell-stretch");
+    }
 
-    const breadcrumbElement = document.createElement("p");
-    breadcrumbElement.className = "page-breadcrumb";
-    breadcrumbElement.textContent = breadcrumb;
+    if (flush) {
+      pageShell.classList.add("page-shell-flush");
+    }
 
-    const titleElement = document.createElement("h1");
-    titleElement.className = "page-title";
-    titleElement.textContent = title;
-
-    const subtitleElement = document.createElement("p");
-    subtitleElement.className = "page-subtitle";
-    subtitleElement.textContent = subtitle;
-
-    header.appendChild(breadcrumbElement);
-    header.appendChild(titleElement);
-    header.appendChild(subtitleElement);
+    if (hideHeader) {
+      pageShell.classList.add("page-shell-headerless");
+    }
 
     const body = document.createElement("div");
     body.className = "page-body";
 
-    pageShell.appendChild(header);
+    if (stretchBody) {
+      body.classList.add("page-body-stretch");
+    }
+
+    if (flush) {
+      body.classList.add("page-body-flush");
+    }
+
+    if (!hideHeader) {
+      const header = document.createElement("header");
+      header.className = "page-header";
+
+      const titleElement = document.createElement("h1");
+      titleElement.className = "page-title";
+      titleElement.textContent = title;
+
+      const subtitleElement = document.createElement("p");
+      subtitleElement.className = "page-subtitle";
+      subtitleElement.textContent = subtitle;
+      subtitleElement.hidden = !subtitle;
+
+      header.appendChild(titleElement);
+      header.appendChild(subtitleElement);
+      pageShell.appendChild(header);
+    }
+
     pageShell.appendChild(body);
 
     return { pageShell, body };
@@ -263,9 +353,12 @@ export class McShellApp extends HTMLElement {
     const template = await loadTemplate("/templates/shell-app.html");
     this.shadowRoot.innerHTML = template;
 
+    this.#ui.sidebar = this.shadowRoot.querySelector(".sidebar");
     this.#ui.sideMenu = this.shadowRoot.querySelector("mc-side-menu");
     this.#ui.pageHost = this.shadowRoot.querySelector("[data-page-host]");
+    this.#ui.sidebarToggle = this.shadowRoot.querySelector("[data-sidebar-toggle]");
     this.#ui.profileTrigger = this.shadowRoot.querySelector("[data-profile-trigger]");
+    this.#ui.profileAvatar = this.shadowRoot.querySelector("[data-profile-avatar]");
     this.#ui.profileName = this.shadowRoot.querySelector("[data-profile-name]");
     this.#ui.profileEmail = this.shadowRoot.querySelector("[data-profile-email]");
     this.#ui.logoutButton = this.shadowRoot.querySelector("[data-logout-button]");
@@ -277,6 +370,12 @@ export class McShellApp extends HTMLElement {
         payload: event.detail,
         metadata: { source: "side-menu" }
       });
+    });
+
+    this.#ui.sidebarToggle.addEventListener("click", () => {
+      this.#sidebarCollapsed = !this.#sidebarCollapsed;
+      this.#persistSidebarCollapsed(this.#sidebarCollapsed);
+      this.#applySidebarChrome();
     });
 
     this.#ui.profileTrigger.addEventListener("click", async () => {
@@ -294,6 +393,24 @@ export class McShellApp extends HTMLElement {
         metadata: { source: "sidebar-logout" }
       });
     });
+
+    this.#applySidebarChrome();
+  }
+
+  #applySidebarChrome() {
+    const isCollapsed = this.#sidebarCollapsed;
+    this.toggleAttribute("sidebar-collapsed", isCollapsed);
+
+    if (this.#ui.sideMenu) {
+      this.#ui.sideMenu.collapsed = isCollapsed;
+    }
+
+    if (this.#ui.sidebarToggle) {
+      const label = this.#translate(isCollapsed ? "sidebar.expand" : "sidebar.collapse");
+      this.#ui.sidebarToggle.setAttribute("title", label);
+      this.#ui.sidebarToggle.setAttribute("aria-label", label);
+      this.#ui.sidebarToggle.setAttribute("aria-pressed", String(isCollapsed));
+    }
   }
 
   #setupRouter() {
@@ -380,6 +497,30 @@ export class McShellApp extends HTMLElement {
     this.#commandRegistry.register(ShellCommandNames.Notify, ({ message }) => {
       this.#notify(message || this.#translate("shell.notificationDefault"));
     });
+
+    this.#commandRegistry.register(
+      ShellCommandNames.SetPageHeader,
+      ({ header, subHeader }) => {
+        const miniAppId = this.#activeMiniAppSession?.miniApp?.id;
+        if (!miniAppId) {
+          return;
+        }
+
+        this.#activeMiniAppHeaderOverride = {
+          miniAppId,
+          title: String(header || "").trim(),
+          subtitle: String(subHeader || "").trim()
+        };
+        this.#applyPageHeader(this.#activeMiniAppHeaderOverride);
+      },
+      {
+        canExecute: ({ header }) => Boolean(
+          this.#activeMiniAppSession
+          && typeof header === "string"
+          && header.trim().length > 0
+        )
+      }
+    );
   }
 
   #registerPlugins() {
@@ -389,7 +530,6 @@ export class McShellApp extends HTMLElement {
       order: 10,
       render: async ({ host, context }) => {
         const { pageShell, body } = this.#createPageScaffold({
-          breadcrumb: this.#translate("menu.home"),
           title: this.#translate("home.title"),
           subtitle: this.#translate("home.description")
         });
@@ -411,7 +551,6 @@ export class McShellApp extends HTMLElement {
       order: 20,
       render: async ({ host, context }) => {
         const { pageShell, body } = this.#createPageScaffold({
-          breadcrumb: this.#translate("menu.profile"),
           title: this.#translate("profile.title"),
           subtitle: this.#translate("profile.description")
         });
@@ -566,7 +705,6 @@ export class McShellApp extends HTMLElement {
       context.route,
       context.user?.subjectId || "anonymous",
       context.miniApps.length,
-      context.activeMiniAppId || "",
       this.#locale
     ]);
 
@@ -584,7 +722,6 @@ export class McShellApp extends HTMLElement {
     }
 
     const { pageShell, body } = this.#createPageScaffold({
-      breadcrumb: this.#translate("chrome.brand"),
       title,
       subtitle
     });
@@ -592,6 +729,7 @@ export class McShellApp extends HTMLElement {
     card.className = "content-card";
     body.appendChild(card);
     this.#ui.pageHost.replaceChildren(pageShell);
+    this.#syncPageHeaderFromDom();
   }
 
   async #renderCurrentRoute(context) {
@@ -603,10 +741,13 @@ export class McShellApp extends HTMLElement {
 
     if (!context.route.startsWith("/mini-apps/")) {
       this.#activeMiniAppSession = null;
+      this.#activeMiniAppHeaderOverride = null;
       if (context.activeMiniAppId) {
         this.#state.send({ type: "ACTIVE_MINI_APP_CHANGED", miniAppId: null });
       }
     }
+
+    this.#ui.pageHost?.classList.remove("page-fullscreen");
 
     if (!resolved) {
       if (renderToken !== this.#routeRenderToken) {
@@ -614,12 +755,12 @@ export class McShellApp extends HTMLElement {
       }
 
       const { pageShell, body } = this.#createPageScaffold({
-        breadcrumb: context.route || "/",
         title: this.#translate("shell.pageNotFound"),
         subtitle: context.route || "/"
       });
       body.innerHTML = `<section class="content-card"><p>${context.route || "/"}</p></section>`;
       this.#ui.pageHost.replaceChildren(pageShell);
+      this.#syncPageHeaderFromDom();
       return;
     }
 
@@ -639,14 +780,15 @@ export class McShellApp extends HTMLElement {
       }
 
       this.#ui.pageHost.replaceChildren(...Array.from(stagingHost.childNodes));
+      this.#ui.pageHost.classList.toggle("page-fullscreen", stagingHost.dataset.pageMode === "fullscreen");
       this.#ui.pageHost.setAttribute("dir", this.#direction);
+      this.#syncPageHeaderFromDom();
     } catch (error) {
       if (renderToken !== this.#routeRenderToken) {
         return;
       }
 
       const { pageShell, body } = this.#createPageScaffold({
-        breadcrumb: context.route || "/",
         title: this.#translate("shell.pageFailed"),
         subtitle: context.route || "/"
       });
@@ -657,6 +799,7 @@ export class McShellApp extends HTMLElement {
       card.appendChild(pre);
       body.appendChild(card);
       this.#ui.pageHost.replaceChildren(pageShell);
+      this.#syncPageHeaderFromDom();
       this.#notify(this.#translate("shell.routeRenderFailed", { message: String(error) }), "error");
     }
   }
@@ -664,7 +807,6 @@ export class McShellApp extends HTMLElement {
   #renderMiniAppsCatalog(host) {
     const miniApps = this.#pluginRegistry.listMiniApps();
     const { pageShell, body } = this.#createPageScaffold({
-      breadcrumb: this.#translate("menu.mini-apps"),
       title: this.#translate("miniapps.title"),
       subtitle: this.#translate("miniapps.description")
     });
@@ -730,7 +872,6 @@ export class McShellApp extends HTMLElement {
 
     if (!miniApp) {
       const { pageShell, body } = this.#createPageScaffold({
-        breadcrumb: `${this.#translate("menu.mini-apps")} / ${miniAppId}`,
         title: this.#translate("miniapp.notFoundTitle"),
         subtitle: this.#translate("miniapp.notFoundDescription", { miniAppId })
       });
@@ -745,11 +886,21 @@ export class McShellApp extends HTMLElement {
       ...miniApp,
       title: localizeMiniAppTitle(this.#locale, miniApp.id, miniApp.title)
     };
+    const useFullScreenLayout = localizedMiniApp.useFullScreenLayout === true;
+    const initialHeader = this.#activeMiniAppHeaderOverride?.miniAppId === localizedMiniApp.id
+      ? this.#activeMiniAppHeaderOverride
+      : {
+          title: localizedMiniApp.title,
+          subtitle: ""
+        };
     const { pageShell, body } = this.#createPageScaffold({
-      breadcrumb: `${this.#translate("menu.mini-apps")} / ${localizedMiniApp.title}`,
-      title: localizedMiniApp.title,
-      subtitle: `${this.#translate("miniapps.route")}: ${localizedMiniApp.route}`
+      title: initialHeader.title,
+      subtitle: initialHeader.subtitle,
+      stretchBody: true,
+      hideHeader: useFullScreenLayout,
+      flush: useFullScreenLayout
     });
+    host.dataset.pageMode = useFullScreenLayout ? "fullscreen" : "default";
 
     const frame = document.createElement("mc-miniapp-frame");
     frame.miniApp = localizedMiniApp;

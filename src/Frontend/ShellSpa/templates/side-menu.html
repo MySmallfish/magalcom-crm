@@ -7,33 +7,80 @@
   .menu {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.2rem;
   }
 
   .menu-item {
-    border: 1px solid #d8e0ea;
-    background: #f8fbff;
+    border: 0;
+    background: transparent;
     color: #1a2a3a;
-    border-radius: 0.5rem;
-    padding: 0.65rem 0.8rem;
+    border-radius: 0.7rem;
+    padding: 0.625rem 0.75rem;
     text-align: start;
     cursor: pointer;
+    inline-size: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: color 120ms ease, background 120ms ease;
   }
 
   .menu-item:hover {
-    border-color: #067d68;
-    color: #025547;
+    background: #f4f7fa;
+    color: #0f172a;
   }
 
   .menu-item.active {
-    border-color: #067d68;
-    background: #e7f7f3;
-    color: #025547;
+    background: #f1f5f9;
+    color: #0f172a;
     font-weight: 600;
   }
 
   :host([dir="rtl"]) .menu-item {
     text-align: right;
+  }
+
+  .menu-item-icon {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    flex: 0 0 auto;
+  }
+
+  .menu-item-icon-fallback {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .menu-item-icon svg {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .menu-item-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+  }
+
+  :host([collapsed]) .menu {
+    gap: 0.35rem;
+  }
+
+  :host([collapsed]) .menu-item {
+    justify-content: center;
+    padding-inline: 0;
+    min-block-size: 2.75rem;
+  }
+
+  :host([collapsed]) .menu-item-label {
+    display: none;
   }
 </style>
 
