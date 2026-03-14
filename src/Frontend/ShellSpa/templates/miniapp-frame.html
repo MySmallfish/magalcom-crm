@@ -1,21 +1,22 @@
 <style>
-  .wrapper {
-    background: #ffffff;
-    border: 1px solid #d8e0ea;
-    border-radius: 0.8rem;
-    padding: 1rem;
+  :host {
+    display: block;
+    height: 100%;
+    min-height: 100%;
   }
 
   iframe {
+    display: block;
     width: 100%;
-    min-height: 420px;
-    border: 1px solid #d8e0ea;
-    border-radius: 0.6rem;
-    background: #f8fbff;
+    height: 100%;
+    min-height: calc(100vh - 11rem);
+    border: 0;
+    background: #ffffff;
+  }
+
+  :host([fullscreen]) iframe {
+    min-height: 100%;
   }
 </style>
 
-<section class="wrapper">
-  <h2 data-miniapp-title></h2>
-  <iframe sandbox="allow-scripts allow-forms"></iframe>
-</section>
+<iframe title="Mini app frame"></iframe>

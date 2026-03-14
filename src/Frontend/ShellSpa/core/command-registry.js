@@ -14,11 +14,27 @@ export class CommandRegistry {
       throw new Error(`Command already registered: ${name}`);
     }
 
-    this.#handlers.set(name, handler);
+    this.#handlers.set(name, {
+      handler,
+      canExecute: options.canExecute || (() => true)
+    });
   }
 
   use(middleware) {
     this.#middlewares.push(middleware);
+  }
+
+  canExecute(commandOrName, payload) {
+    const command = typeof commandOrName === "string"
+      ? { name: commandOrName, payload: payload ?? null, metadata: {} }
+      : commandOrName;
+
+    const registration = this.#handlers.get(command.name);
+    if (!registration) {
+      return false;
+    }
+
+    return Boolean(registration.canExecute(command.payload, command));
   }
 
   async execute(commandOrName, payload) {
@@ -26,10 +42,16 @@ export class CommandRegistry {
       ? { name: commandOrName, payload: payload ?? null, metadata: {} }
       : commandOrName;
 
-    const handler = this.#handlers.get(command.name);
-    if (!handler) {
+    const registration = this.#handlers.get(command.name);
+    if (!registration) {
       throw new Error(`Command not registered: ${command.name}`);
     }
+
+    if (!registration.canExecute(command.payload, command)) {
+      throw new Error(`Command cannot execute: ${command.name}`);
+    }
+
+    const { handler } = registration;
 
     const pipeline = [...this.#middlewares];
     let pointer = -1;

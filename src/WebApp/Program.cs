@@ -30,6 +30,14 @@ if (shellSpaPath is null)
     throw new DirectoryNotFoundException($"Shell SPA directory not found in known paths: {string.Join(", ", shellSpaCandidates)}");
 }
 
+var appsCandidates = new[]
+{
+    Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "..", "apps")),
+    Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "apps"))
+};
+
+var appsPath = appsCandidates.FirstOrDefault(Directory.Exists);
+
 app.UseDefaultFiles(new DefaultFilesOptions
 {
     FileProvider = new PhysicalFileProvider(shellSpaPath),
@@ -41,6 +49,15 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(shellSpaPath),
     RequestPath = ""
 });
+
+if (appsPath is not null)
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(appsPath),
+        RequestPath = "/apps"
+    });
+}
 
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

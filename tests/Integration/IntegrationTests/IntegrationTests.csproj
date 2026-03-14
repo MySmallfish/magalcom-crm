@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0-*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -22,5 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/Shared/Contracts/Contracts.csproj" />
+    <ProjectReference Include="../../../src/WebApi/WebApi.csproj" />
   </ItemGroup>
 </Project>

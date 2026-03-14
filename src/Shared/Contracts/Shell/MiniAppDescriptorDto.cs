@@ -7,4 +7,5 @@ public sealed record MiniAppDescriptorDto(
     string Url,
     string Origin,
     bool Enabled,
+    bool UseFullScreenLayout,
     IReadOnlyCollection<string> RequiredRoles);

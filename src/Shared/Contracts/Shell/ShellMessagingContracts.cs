@@ -19,6 +19,7 @@ public static class ShellCommandNames
     public const string Logout = "auth.logout";
     public const string Notify = "shell.notify";
     public const string OpenMiniApp = "miniapp.open";
+    public const string SetPageHeader = "shell.header.set";
 }
 
 public static class ShellEventNames

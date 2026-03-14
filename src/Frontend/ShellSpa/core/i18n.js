@@ -10,9 +10,12 @@ const textCatalog = Object.freeze({
   "menu.home": { he: "בית", en: "Home" },
   "menu.profile": { he: "פרופיל", en: "Profile" },
   "menu.mini-apps": { he: "מיני אפליקציות", en: "Mini Apps" },
+  "menu.leads": { he: "ניהול לידים", en: "Leads Management" },
   "profile.guest": { he: "אורח", en: "Guest" },
   "profile.open": { he: "פרופיל", en: "Profile" },
   "profile.logout": { he: "התנתקות", en: "Logout" },
+  "sidebar.collapse": { he: "כיווץ תפריט הצד", en: "Collapse sidebar" },
+  "sidebar.expand": { he: "הרחבת תפריט הצד", en: "Expand sidebar" },
   "profile.language": { he: "שפה", en: "Language" },
   "profile.title": { he: "פרופיל משתמש", en: "User Profile" },
   "profile.description": { he: "פרטי הזיהוי והעדפות המעטפת נשמרים עבור המשתמש.", en: "Identity details and shell preferences are stored per user." },
@@ -22,6 +25,8 @@ const textCatalog = Object.freeze({
   "profile.roles": { he: "תפקידים", en: "Roles" },
   "profile.languageHelp": { he: "עברית היא ברירת המחדל. ניתן להחליף שפה בכל עת.", en: "Hebrew is the default. You can switch language at any time." },
   "profile.logoutButton": { he: "התנתקות", en: "Logout" },
+  "locale.he": { he: "עברית", en: "Hebrew" },
+  "locale.en": { he: "אנגלית", en: "English" },
   "common.none": { he: "ללא", en: "None" },
   "common.notAvailable": { he: "לא זמין", en: "N/A" },
   "auth.signingInTitle": { he: "מתחברים למערכת", en: "Signing in" },
@@ -49,7 +54,9 @@ const textCatalog = Object.freeze({
   "miniapp.notFoundDescription": { he: "המיני אפליקציה עם המזהה {miniAppId} אינה זמינה למשתמש זה.", en: "Mini-app with id {miniAppId} is not available for this user." }
 });
 
-const miniAppTitleCatalog = Object.freeze({});
+const miniAppTitleCatalog = Object.freeze({
+  "leads-management": { he: "ניהול לידים", en: "Leads Management" }
+});
 
 function applyParams(template, params) {
   return template.replace(/\{(\w+)\}/g, (match, key) => {
