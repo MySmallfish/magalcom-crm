@@ -1,5 +1,6 @@
 using Magalcom.Crm.Shared.Contracts.Leads;
 using Magalcom.Crm.Shared.Data.InMemory;
+using Magalcom.Crm.Shared.Data.Interfaces;
 
 namespace Magalcom.Crm.Tests.Unit;
 
@@ -105,5 +106,25 @@ public sealed class InMemoryLeadDataServiceTests
         Assert.Equal(260000m, updated.Metrics.WonAmount);
         Assert.False(updated.IsIncomplete);
         Assert.Contains(updated.AuditTrail, entry => entry.Action == "Updated");
+    }
+
+    [Fact]
+    public async Task GetLeads_ShouldRespectOwnerScopeForNonAdmins()
+    {
+        var service = new InMemoryLeadDataService();
+        var seededLead = (await service.GetLeadsAsync()).Single();
+
+        var ownLeads = await service.GetLeadsAsync(LeadQueryScope.ForUser("dev-user-001"));
+        var otherLeads = await service.GetLeadsAsync(LeadQueryScope.ForUser("someone-else"));
+        var anonymousLeads = await service.GetLeadsAsync(LeadQueryScope.ForUser(null));
+        var adminLeads = await service.GetLeadsAsync(LeadQueryScope.ForUser("someone-else", canViewAll: true));
+
+        Assert.Single(ownLeads);
+        Assert.Empty(otherLeads);
+        Assert.Empty(anonymousLeads);
+        Assert.Single(adminLeads);
+        Assert.Equal(seededLead.Id, ownLeads.Single().Id);
+        Assert.Equal(seededLead.Id, adminLeads.Single().Id);
+        Assert.Null(await service.GetLeadByIdAsync(seededLead.Id, LeadQueryScope.ForUser("someone-else")));
     }
 }

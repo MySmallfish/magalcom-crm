@@ -26,7 +26,8 @@ public static class LeadCalculationService
     private static readonly IReadOnlyCollection<StageCoefficientDto> DefaultStageCoefficients =
     [
         new(LeadStage.Before, 0m),
-        new(LeadStage.Approaching, 15m),
+        new(LeadStage.AuctionKnown, 15m),
+        new(LeadStage.AuctionActive, 25m),
         new(LeadStage.Sent, 30m)
     ];
 
@@ -93,7 +94,7 @@ public static class LeadCalculationService
 
         if (dueDate is null)
         {
-            missingFields.Add("Due Date");
+            missingFields.Add("Due Quarter");
         }
 
         if (isPerpetual is null)

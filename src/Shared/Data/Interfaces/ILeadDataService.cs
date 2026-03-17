@@ -5,8 +5,8 @@ namespace Magalcom.Crm.Shared.Data.Interfaces;
 public interface ILeadDataService
 {
     Task<LeadModuleMetadataDto> GetMetadataAsync(CancellationToken cancellationToken = default);
-    Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(CancellationToken cancellationToken = default);
-    Task<LeadDto?> GetLeadByIdAsync(Guid leadId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(LeadQueryScope? scope = null, CancellationToken cancellationToken = default);
+    Task<LeadDto?> GetLeadByIdAsync(Guid leadId, LeadQueryScope? scope = null, CancellationToken cancellationToken = default);
     Task<LeadDto> AddLeadAsync(CreateLeadRequest request, LeadOwnerDto actor, CancellationToken cancellationToken = default);
     Task<LeadDto?> SaveLeadAsync(Guid leadId, UpdateLeadRequest request, LeadOwnerDto actor, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<WorkTypeDto>> GetWorkTypesAsync(CancellationToken cancellationToken = default);

@@ -43,6 +43,8 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
             {
                 services.RemoveAll<ILeadDataService>();
                 services.AddSingleton<ILeadDataService, InMemoryLeadDataService>();
+                services.RemoveAll<IStatisticsReportDataService>();
+                services.AddSingleton<IStatisticsReportDataService, InMemoryStatisticsReportDataService>();
 
                 services.AddAuthentication(options =>
                 {
@@ -83,7 +85,7 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
                 new LeadQualificationAnswerRequest("project-management-relationship", true),
                 new LeadQualificationAnswerRequest("customer-under-price-list", false)
             },
-            LeadStage.Approaching,
+            LeadStage.AuctionKnown,
             false,
             new DateOnly(2026, 4, 20),
             LeadOfferStatus.Open,
@@ -210,6 +212,42 @@ public sealed class LeadApiFlowTests : IClassFixture<WebApplicationFactory<Progr
         var detailsTable = detailsSheet.Table("LeadDetails");
         Assert.True(detailsTable.ShowAutoFilter);
         Assert.Equal(1, detailsTable.DataRange.RowCount());
+    }
+
+    [Fact]
+    public async Task StatisticsReport_ShouldReturnMatrixAndWorkbookFromStatisticsSource()
+    {
+        using var client = _factory.CreateClient();
+
+        var query = "/api/v1/statistics-report?fromDate=2026-01-01&toDate=2026-03-01&locale=en";
+        var report = await client.GetFromJsonAsync<SalesMonthlyReportDto>(query, JsonOptions);
+
+        Assert.NotNull(report);
+        Assert.Equal(3, report!.AvailableSalesPeople.Count);
+        Assert.Equal(3, report.Months.Count);
+        Assert.Equal(3, report.Rows.Count);
+
+        var developmentRow = report.Rows.Single(item => item.SalesPerson.DisplayName == "Development User");
+        var developmentMonths = developmentRow.Months.OrderBy(item => item.MonthStart).ToArray();
+        Assert.Equal(18000m, developmentMonths[0].ProjectedAmount);
+        Assert.Equal(15200m, developmentMonths[0].ActualAmount);
+        Assert.Equal(19700m, developmentMonths[1].ProjectedAmount);
+        Assert.Equal(15910m, developmentMonths[1].ActualAmount);
+        Assert.Equal(21400m, developmentMonths[2].ProjectedAmount);
+        Assert.Equal(16620m, developmentMonths[2].ActualAmount);
+
+        using var exportResponse = await client.GetAsync("/api/v1/statistics-report/export?fromDate=2026-01-01&toDate=2026-03-01&locale=en");
+        exportResponse.EnsureSuccessStatusCode();
+
+        var workbookBytes = await exportResponse.Content.ReadAsByteArrayAsync();
+        using var workbook = new XLWorkbook(new MemoryStream(workbookBytes));
+        var sheet = workbook.Worksheet("Statistics Report");
+
+        Assert.Equal("Statistics Report", sheet.Cell("A1").GetString());
+        Assert.Equal("Alice Cohen", sheet.Cell("A8").GetString());
+        Assert.Equal("Projected", sheet.Cell("B8").GetString());
+        Assert.Equal(14000m, sheet.Cell(8, 3).GetValue<decimal>());
+        Assert.Equal(11800m, sheet.Cell(9, 3).GetValue<decimal>());
     }
 }
 

@@ -3,8 +3,9 @@ namespace Magalcom.Crm.Shared.Contracts.Leads;
 public enum LeadStage
 {
     Before = 0,
-    Approaching = 1,
-    Sent = 2
+    AuctionKnown = 1,
+    Sent = 2,
+    AuctionActive = 3
 }
 
 public enum LeadOfferStatus
@@ -159,3 +160,35 @@ public sealed record UpdateWorkTypeRequest(
     string Name,
     int SortOrder,
     bool IsActive);
+
+public sealed record SalesMonthlyReportMonthDto(
+    DateOnly MonthStart);
+
+public sealed record StatisticsReportEntryDto(
+    Guid Id,
+    LeadOwnerDto SalesPerson,
+    DateOnly EntryDate,
+    decimal ProjectedAmount,
+    decimal ActualAmount);
+
+public sealed record SalesMonthlyReportMonthValueDto(
+    DateOnly MonthStart,
+    decimal ProjectedAmount,
+    decimal ActualAmount);
+
+public sealed record SalesMonthlyReportRowDto(
+    LeadOwnerDto SalesPerson,
+    IReadOnlyCollection<SalesMonthlyReportMonthValueDto> Months,
+    decimal ProjectedTotal,
+    decimal ActualTotal);
+
+public sealed record SalesMonthlyReportTotalsDto(
+    IReadOnlyCollection<SalesMonthlyReportMonthValueDto> Months,
+    decimal ProjectedTotal,
+    decimal ActualTotal);
+
+public sealed record SalesMonthlyReportDto(
+    IReadOnlyCollection<LeadOwnerDto> AvailableSalesPeople,
+    IReadOnlyCollection<SalesMonthlyReportMonthDto> Months,
+    IReadOnlyCollection<SalesMonthlyReportRowDto> Rows,
+    SalesMonthlyReportTotalsDto Totals);

@@ -36,18 +36,33 @@ public sealed class InMemoryLeadDataService : ILeadDataService
         return Task.FromResult(metadata);
     }
 
-    public Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(LeadQueryScope? scope = null, CancellationToken cancellationToken = default)
     {
+        scope ??= LeadQueryScope.All;
+
         return Task.FromResult<IReadOnlyCollection<LeadDto>>(
             _leads.Values
+                .Where(item => scope.CanViewAll
+                    || (!string.IsNullOrWhiteSpace(scope.SubjectId)
+                        && string.Equals(item.Owner.SubjectId, scope.SubjectId, StringComparison.OrdinalIgnoreCase)))
                 .OrderByDescending(item => item.UpdatedAtUtc)
                 .ThenBy(item => item.Customer.Name, StringComparer.OrdinalIgnoreCase)
                 .ToArray());
     }
 
-    public Task<LeadDto?> GetLeadByIdAsync(Guid leadId, CancellationToken cancellationToken = default)
+    public Task<LeadDto?> GetLeadByIdAsync(Guid leadId, LeadQueryScope? scope = null, CancellationToken cancellationToken = default)
     {
         _leads.TryGetValue(leadId, out var lead);
+        scope ??= LeadQueryScope.All;
+
+        if (lead is not null
+            && !scope.CanViewAll
+            && (string.IsNullOrWhiteSpace(scope.SubjectId)
+                || !string.Equals(lead.Owner.SubjectId, scope.SubjectId, StringComparison.OrdinalIgnoreCase)))
+        {
+            lead = null;
+        }
+
         return Task.FromResult(lead);
     }
 
@@ -234,9 +249,9 @@ public sealed class InMemoryLeadDataService : ILeadDataService
                 new LeadQualificationAnswerRequest("project-management-relationship", true),
                 new LeadQualificationAnswerRequest("customer-under-price-list", false)
             },
-            LeadStage.Approaching,
+            LeadStage.AuctionKnown,
             false,
-            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
+            GetQuarterStart(DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3))),
             LeadOfferStatus.Open,
             null,
             new[]
@@ -437,6 +452,12 @@ public sealed class InMemoryLeadDataService : ILeadDataService
     }
 
     private static string NormalizeProjectName(string value) => (value ?? string.Empty).Trim();
+
+    private static DateOnly GetQuarterStart(DateOnly date)
+    {
+        var month = ((date.Month - 1) / 3) * 3 + 1;
+        return new DateOnly(date.Year, month, 1);
+    }
 
     private static void ValidateWorkTypeRequest(string code, string name, int sortOrder)
     {

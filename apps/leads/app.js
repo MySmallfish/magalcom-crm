@@ -20,7 +20,7 @@ const LocaleCodes = Object.freeze({
   English: "en"
 });
 
-const StageValues = Object.freeze(["Before", "Approaching", "Sent"]);
+const StageValues = Object.freeze(["Before", "AuctionKnown", "AuctionActive", "Sent"]);
 const OfferStatusValues = Object.freeze(["Open", "Win", "Lose", "Suspended", "Cancelled"]);
 
 const MessageTypes = Object.freeze({
@@ -38,7 +38,8 @@ const HostCommandNames = Object.freeze({
 
 const DashboardStageColors = Object.freeze({
   Before: "#8ea1c5",
-  Approaching: "#5573ad",
+  AuctionKnown: "#5573ad",
+  AuctionActive: "#355f9f",
   Sent: "#274884",
   Unstaged: "#a3b3c1"
 });
@@ -78,6 +79,7 @@ const textCatalog = Object.freeze({
   "view.list": { he: "רשימת לידים", en: "Lead List" },
   "view.newLead": { he: "ליד חדש", en: "New Lead" },
   "view.editLead": { he: "עריכת ליד", en: "Edit Lead" },
+  "view.salesMonthlyReport": { he: "דוח סטטיסטיקות", en: "Statistics Report" },
   "app.subtitle.dashboard": { he: "מבט מרוכז על פייפליין, תחזית וסיכונים פתוחים.", en: "A focused view of pipeline, forecast, and open risks." },
   "app.subtitle.list": { he: "סינון, סקירה ותחזוקה שוטפת של כל הלידים הפעילים.", en: "Filter, review, and manage the active lead pipeline." },
   "question.knows-customer-personally": { he: "מכירים את הלקוח באופן אישי?", en: "Know the customer personally?" },
@@ -116,13 +118,14 @@ const textCatalog = Object.freeze({
   "common.close": { he: "סגירה", en: "Close" },
   "common.all": { he: "הכל", en: "All" },
   "common.notSet": { he: "לא הוגדר", en: "Not set" },
-  "common.noDueDate": { he: "ללא תאריך יעד", en: "No due date" },
+  "common.noDueDate": { he: "ללא רבעון יעד", en: "No due quarter" },
   "common.yes": { he: "כן", en: "Yes" },
   "common.no": { he: "לא", en: "No" },
   "common.open": { he: "פתיחה", en: "Open" },
   "common.remove": { he: "הסרה", en: "Remove" },
   "common.exporting": { he: "מייצא...", en: "Exporting..." },
   "common.selectType": { he: "בחירת סוג", en: "Select type" },
+  "common.selectQuarter": { he: "בחירת רבעון", en: "Select quarter" },
   "common.memoryOnly": { he: "בזיכרון בלבד", en: "memory only" },
   "common.incomplete": { he: "לא הושלם", en: "Incomplete" },
   "common.noData": { he: "עדיין אין נתונים להצגה.", en: "No data available yet." },
@@ -139,7 +142,7 @@ const textCatalog = Object.freeze({
   "dashboard.stageMix": { he: "התפלגות שלבים", en: "Stage mix" },
   "dashboard.topCustomers": { he: "לקוחות מובילים", en: "Top customers" },
   "dashboard.workTypeConcentration": { he: "ריכוז לפי סוג עבודה", en: "Work type concentration" },
-  "dashboard.monthlyForecast": { he: "תחזית חודשית", en: "Monthly forecast" },
+  "dashboard.monthlyForecast": { he: "תחזית רבעונית", en: "Quarterly forecast" },
   "dashboard.riskWidget": { he: "לידים בסיכון", en: "Risk widget" },
   "dashboard.noStageData": { he: "עדיין אין נתוני שלבים.", en: "No stage data available yet." },
   "dashboard.openFilteredList": { he: "פתיחת רשימה מסוננת", en: "Open filtered list" },
@@ -153,7 +156,7 @@ const textCatalog = Object.freeze({
   "dashboard.pipelineFunnel": { he: "משפך פייפליין", en: "Pipeline funnel" },
   "dashboard.statusPortfolio": { he: "התפלגות סטטוסים", en: "Status portfolio" },
   "dashboard.workTypePortfolio": { he: "תמהיל סוגי עבודה", en: "Work type portfolio" },
-  "dashboard.monthlyRunRate": { he: "תחזית לפי חודשים", en: "Monthly forecast run-rate" },
+  "dashboard.monthlyRunRate": { he: "תחזית לפי רבעונים", en: "Quarterly forecast run-rate" },
   "dashboard.ownerLeaderboard": { he: "דירוג בעלי פייפליין", en: "Owner leaderboard" },
   "dashboard.customerExposure": { he: "חשיפה לפי לקוח", en: "Customer exposure" },
   "dashboard.portfolioHealth": { he: "בריאות הפורטפוליו", en: "Portfolio health" },
@@ -163,6 +166,7 @@ const textCatalog = Object.freeze({
   "dashboard.emptySpotlight": { he: "עדיין אין מספיק נתונים להצגת מוקד.", en: "Not enough data yet to show a spotlight." },
   "dashboard.exploreList": { he: "פתיחת הרשימה", en: "Open lead list" },
   "dashboard.report": { he: "דוח", en: "Report" },
+  "dashboard.salesMonthlyReport": { he: "דוח סטטיסטיקות", en: "Statistics Report" },
   "dashboard.ofPipeline": { he: "מהפייפליין", en: "of pipeline" },
   "dashboard.ofForecast": { he: "מהתחזית", en: "of forecast" },
   "dashboard.leadsCount": { he: "{count} לידים", en: "{count} leads" },
@@ -181,10 +185,10 @@ const textCatalog = Object.freeze({
   "list.customer": { he: "לקוח", en: "Customer" },
   "list.workType": { he: "סוג עבודה", en: "Work Type" },
   "list.contractType": { he: "סוג חוזה", en: "Contract Type" },
-  "list.stage": { he: "שלב", en: "Stage" },
-  "list.offerStatus": { he: "סטטוס הצעה", en: "Offer Status" },
-  "list.dueFrom": { he: "תאריך יעד מ-", en: "Due from" },
-  "list.dueTo": { he: "תאריך יעד עד", en: "Due to" },
+  "list.stage": { he: "סוג ליד", en: "Lead Type" },
+  "list.offerStatus": { he: "סטטוס מכרז", en: "Auction Status" },
+  "list.dueFrom": { he: "רבעון יעד מ-", en: "Due quarter from" },
+  "list.dueTo": { he: "רבעון יעד עד", en: "Due quarter to" },
   "list.amountMin": { he: "סכום מינימלי", en: "Amount min" },
   "list.amountMax": { he: "סכום מקסימלי", en: "Amount max" },
   "list.sortBy": { he: "מיון לפי", en: "Sort By" },
@@ -195,7 +199,7 @@ const textCatalog = Object.freeze({
   "list.contract.perpetual": { he: "מתמשך", en: "Perpetual" },
   "list.contract.auction": { he: "מכרז / חד-פעמי", en: "Auction / One-time" },
   "list.sort.updatedAt": { he: "עודכן לאחרונה", en: "Last Updated" },
-  "list.sort.dueDate": { he: "תאריך יעד", en: "Due Date" },
+  "list.sort.dueDate": { he: "רבעון יעד", en: "Due Quarter" },
   "list.sort.totalAmount": { he: "סכום כולל", en: "Total Amount" },
   "list.sort.forecastAmount": { he: "תחזית", en: "Forecast Amount" },
   "list.sort.chanceToWin": { he: "סיכויי זכייה", en: "Chance to Win" },
@@ -206,11 +210,39 @@ const textCatalog = Object.freeze({
   "table.chance": { he: "סיכוי", en: "Chance" },
   "table.due": { he: "יעד", en: "Due" },
   "table.updated": { he: "עודכן", en: "Updated" },
+  "report.subtitle": { he: "השוואת תחזית מול ביצוע בפועל לפי חודש ולפי איש מכירות, ממקור נתונים סטטיסטי נפרד.", en: "Compare projected and actual sales by month and salesperson from a dedicated statistics source." },
+  "report.fromDate": { he: "מתאריך", en: "From date" },
+  "report.toDate": { he: "עד תאריך", en: "To date" },
+  "report.salesperson": { he: "איש מכירות", en: "Salesperson" },
+  "report.allSalespeople": { he: "כל אנשי המכירות", en: "All salespeople" },
+  "report.run": { he: "הצגת דוח", en: "Run report" },
+  "report.export": { he: "ייצוא לאקסל", en: "Export to Excel" },
+  "report.loading": { he: "טוען דוח...", en: "Loading report..." },
+  "report.metric": { he: "מדד", en: "Metric" },
+  "report.projected": { he: "תחזית", en: "Projected" },
+  "report.actual": { he: "בפועל", en: "Actual" },
+  "report.total": { he: "סה\"כ", en: "Total" },
+  "report.noData": { he: "אין נתונים להצגה עבור המסננים שנבחרו.", en: "No data is available for the selected filters." },
+  "report.basisNote": { he: "מקור הנתונים לדוח הוא טבלת סטטיסטיקות ייעודית לפי תאריך ואיש מכירות.", en: "This report uses a dedicated statistics table by date and salesperson." },
+  "report.lockedToCurrentUser": { he: "הדוח מוגבל לאיש המכירות המחובר.", en: "This report is limited to the signed-in salesperson." },
+  "report.summary.projected": { he: "תחזית כוללת", en: "Projected total" },
+  "report.summary.actual": { he: "בפועל כולל", en: "Actual total" },
+  "report.summary.salespeople": { he: "אנשי מכירות", en: "Salespeople" },
+  "report.summary.months": { he: "חודשים", en: "Months" },
+  "report.chart.salespeople": { he: "חלוקה לפי אנשי מכירות", en: "Salesperson distribution" },
+  "report.chart.months": { he: "מגמה חודשית", en: "Monthly trend" },
+  "report.chart.projected": { he: "עמודות תחזית", en: "Projected bars" },
+  "report.chart.actual": { he: "קו בפועל", en: "Actual line" },
+  "report.sort.asc": { he: "מיון עולה", en: "Sort ascending" },
+  "report.sort.desc": { he: "מיון יורד", en: "Sort descending" },
+  "validation.reportDatesRequired": { he: "חובה לבחור תאריך התחלה ותאריך סיום לדוח.", en: "From and to dates are required for the report." },
+  "validation.reportDateRange": { he: "תאריך ההתחלה חייב להיות מוקדם או שווה לתאריך הסיום.", en: "From date must be earlier than or equal to the to date." },
   "toast.filtered": { he: "הרשימה סוננה לפי {label}.", en: "Filtered list by {label}." },
   "toast.created": { he: "הליד נוצר בהצלחה.", en: "Lead created successfully." },
   "toast.updated": { he: "הליד עודכן בהצלחה.", en: "Lead updated successfully." },
   "validation.customerRequired": { he: "חובה לבחור לקוח.", en: "Customer is required." },
   "validation.projectRequired": { he: "חובה להזין פרויקט.", en: "Project is required." },
+  "validation.dueDateRequired": { he: "חובה לבחור רבעון יעד.", en: "Due quarter is required." },
   "validation.amountLineWorkType": { he: "בשורת סכום {index} חובה לבחור סוג עבודה.", en: "Amount line {index} must include a work type." },
   "validation.amountLineAmount": { he: "בשורת סכום {index} חובה להזין סכום חיובי.", en: "Amount line {index} must include a positive amount." },
   "validation.amountLineAmountInvalid": { he: "בשורת סכום {index} יש להזין מספר תקין, למשל 1250000 או 1,250,000.", en: "Amount line {index} must be a valid number, for example 1250000 or 1,250,000." },
@@ -227,16 +259,18 @@ const textCatalog = Object.freeze({
   "form.customerPlaceholder": { he: "התחילו להקליד שם לקוח", en: "Start typing a customer name" },
   "form.project": { he: "פרויקט", en: "Project" },
   "form.projectPlaceholder": { he: "שימוש בפרויקט קיים או יצירת חדש", en: "Reuse or create a project" },
-  "form.offerStatus": { he: "סטטוס הצעה", en: "Offer Status" },
+  "form.offerStatus": { he: "סטטוס מכרז", en: "Auction Status" },
   "form.comments": { he: "הערות", en: "Comments" },
   "form.commentsPlaceholder": { he: "תעדו הקשר, חסמים ופעולות המשך.", en: "Capture deal context, blockers, and action items." },
   "form.qualificationAnswers": { he: "תשובות כשירות", en: "Qualification answers" },
   "form.overrideRule": { he: "כלל עוקף", en: "Override rule" },
   "form.weight": { he: "משקל {value}%", en: "{value}% weight" },
-  "form.pipelineStageOutcome": { he: "שלב ותוצאה", en: "Pipeline stage and outcome" },
-  "form.stage": { he: "שלב", en: "Stage" },
+  "form.pipelineStageOutcome": { he: "מצב הזדמנות ותזמון", en: "Opportunity status and timing" },
+  "form.stage": { he: "סוג ליד", en: "Lead Type" },
   "form.perpetualContract": { he: "חוזה מתמשך?", en: "Perpetual contract?" },
-  "form.dueDate": { he: "תאריך יעד", en: "Due date" },
+  "form.year": { he: "שנה", en: "Year" },
+  "form.quarter": { he: "רבעון", en: "Quarter" },
+  "form.dueDate": { he: "רבעון יעד", en: "Due quarter" },
   "form.actualAwardedAmount": { he: "סכום זכייה בפועל", en: "Actual awarded amount" },
   "form.amountLines": { he: "שורות סכומים", en: "Amount lines" },
   "form.amountLinesHelp": { he: "הסכומים נשמרים לפי סוג עבודה. הסכום הכולל מחושב תמיד משורות אלו.", en: "Amounts are captured per work type. Total amount is always calculated from these lines." },
@@ -258,7 +292,8 @@ const textCatalog = Object.freeze({
   "form.forecastComplete": { he: "הליד שלם מספיק כדי להשתתף בווידג'טי התחזית.", en: "This lead is complete enough to participate in forecast widgets." },
   "form.currentOwner": { he: "בעלים נוכחי", en: "Current owner" },
   "stage.Before": { he: "לפני", en: "Before" },
-  "stage.Approaching": { he: "מתקרב", en: "Approaching" },
+  "stage.AuctionKnown": { he: "מכרז ידוע", en: "Auction is Known" },
+  "stage.AuctionActive": { he: "מכרז פעיל", en: "Auction is Active" },
   "stage.Sent": { he: "נשלח", en: "Sent" },
   "offerStatus.Open": { he: "פתוח", en: "Open" },
   "offerStatus.Win": { he: "זכייה", en: "Win" },
@@ -273,6 +308,8 @@ const state = {
   loadingData: false,
   saving: false,
   exporting: false,
+  reportLoading: false,
+  reportExporting: false,
   error: "",
   toast: null,
   validationErrors: [],
@@ -281,9 +318,13 @@ const state = {
   metadata: null,
   leads: [],
   filters: { ...DEFAULT_FILTERS },
+  reportFilters: createDefaultReportFilters(),
+  reportData: null,
+  reportSort: { key: "", direction: "desc" },
   form: createEmptyForm(),
   selectedLeadId: null,
-  formModalOpen: false
+  formModalOpen: false,
+  reportModalOpen: false
 };
 
 const focusableSelector = [
@@ -298,6 +339,10 @@ const focusableSelector = [
 let pendingFocusRequest = null;
 let modalTriggerFocusRequest = null;
 let pendingModalViewport = null;
+let reportTableScrollElement = null;
+let reportSummaryScrollElement = null;
+let reportFrozenScrollElement = null;
+let syncingReportScroll = false;
 
 const allowedOrigins = new Set([window.location.origin]);
 if (document.referrer) {
@@ -324,6 +369,133 @@ function currentLocale() {
 
 function currentDirection() {
   return state.shellContext?.direction === "ltr" ? "ltr" : "rtl";
+}
+
+function isAdminUser() {
+  return (state.shellContext?.user?.roles || []).some((role) =>
+    String(role).toLowerCase() === "admin"
+  );
+}
+
+function shouldShowQualificationQuestions(stage = state.form.stage) {
+  return stage === "AuctionKnown";
+}
+
+function shouldShowOfferStatus(stage = state.form.stage) {
+  return stage === "AuctionActive";
+}
+
+function shouldShowPerpetualContract(stage = state.form.stage) {
+  return stage === "AuctionKnown" || stage === "AuctionActive" || stage === "Sent";
+}
+
+function getLeadOfferStatus(lead) {
+  return lead?.stage === "AuctionActive" ? lead.offerStatus : null;
+}
+
+function getQuarterOptionLabel(year, quarter) {
+  return currentLocale() === LocaleCodes.Hebrew
+    ? `רבעון ${quarter} ${year}`
+    : `Q${quarter} ${year}`;
+}
+
+function getQuarterChoiceLabel(quarter) {
+  return currentLocale() === LocaleCodes.Hebrew
+    ? `רבעון ${quarter}`
+    : `Q${quarter}`;
+}
+
+function getQuarterStartDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const text = String(value).trim();
+  const quarterMatch = /^(\d{4})-Q([1-4])$/i.exec(text);
+  if (quarterMatch) {
+    const [, yearText, quarterText] = quarterMatch;
+    const month = (Number(quarterText) - 1) * 3 + 1;
+    return new Date(Number(yearText), month - 1, 1);
+  }
+
+  const normalized = text.slice(0, 10);
+  const [yearText, monthText] = normalized.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  const quarterStartMonth = Math.floor((month - 1) / 3) * 3 + 1;
+  return new Date(year, quarterStartMonth - 1, 1);
+}
+
+function normalizeDueQuarterValue(value) {
+  const quarterStart = getQuarterStartDate(value);
+  if (!quarterStart) {
+    return "";
+  }
+
+  const year = quarterStart.getFullYear();
+  const month = String(quarterStart.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+function parseDateOnly(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || "").trim());
+  if (!match) {
+    return null;
+  }
+
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+function getQuarterKey(value) {
+  const quarterStart = getQuarterStartDate(value);
+  if (!quarterStart) {
+    return "";
+  }
+
+  return `${quarterStart.getFullYear()}-Q${Math.floor(quarterStart.getMonth() / 3) + 1}`;
+}
+
+function getQuarterLabel(value) {
+  const quarterStart = getQuarterStartDate(value);
+  if (!quarterStart) {
+    return translate("common.noDueDate");
+  }
+
+  const quarter = Math.floor(quarterStart.getMonth() / 3) + 1;
+  return getQuarterOptionLabel(quarterStart.getFullYear(), quarter);
+}
+
+function getQuarterEndDate(value) {
+  const quarterStart = getQuarterStartDate(value);
+  if (!quarterStart) {
+    return null;
+  }
+
+  return new Date(quarterStart.getFullYear(), quarterStart.getMonth() + 3, 0);
+}
+
+function getDueQuarterOptions() {
+  const today = new Date();
+  const startYear = today.getFullYear() - 1;
+  const endYear = today.getFullYear() + 10;
+  const options = [];
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    for (let quarter = 1; quarter <= 4; quarter += 1) {
+      const month = (quarter - 1) * 3 + 1;
+      const value = `${year}-${String(month).padStart(2, "0")}-01`;
+      options.push({
+        value,
+        label: getQuarterOptionLabel(year, quarter)
+      });
+    }
+  }
+
+  return options;
 }
 
 function translate(key, params = {}) {
@@ -404,7 +576,22 @@ function isLeadFormOpen() {
   return state.formModalOpen === true;
 }
 
+function isReportModalOpen() {
+  return state.reportModalOpen === true;
+}
+
+function isAnyModalOpen() {
+  return isLeadFormOpen() || isReportModalOpen();
+}
+
 function getHeaderContent() {
+  if (isReportModalOpen()) {
+    return {
+      header: translate("view.salesMonthlyReport"),
+      subHeader: state.view === "list" ? translate("view.list") : translate("view.dashboard")
+    };
+  }
+
   if (isLeadFormOpen()) {
     return {
       header: state.selectedLeadId ? translate("view.editLead") : translate("view.newLead"),
@@ -504,6 +691,7 @@ setTimeout(() => {
 }, 500);
 
 function createEmptyForm() {
+  const defaultDueYear = getDefaultDueYear();
   return {
     id: "",
     customerId: "",
@@ -512,6 +700,8 @@ function createEmptyForm() {
     comments: "",
     stage: "",
     isPerpetual: "",
+    dueYear: defaultDueYear,
+    dueQuarter: "",
     dueDate: "",
     offerStatus: "Open",
     actualAwardedAmount: "",
@@ -519,6 +709,56 @@ function createEmptyForm() {
     amountLines: [createEmptyAmountLine()],
     auditTrail: []
   };
+}
+
+function createDefaultReportFilters(ownerSubjectId = "") {
+  const today = new Date();
+  const year = today.getFullYear();
+  return {
+    fromDate: formatDateInputValue(new Date(year, 0, 1)),
+    toDate: formatDateInputValue(new Date(year, 11, 31)),
+    ownerSubjectId
+  };
+}
+
+function getDefaultDueYear() {
+  const today = new Date();
+  const year = today.getFullYear();
+  return String(today.getMonth() >= 10 ? year + 1 : year);
+}
+
+function formatDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toQuarterParts(value) {
+  const quarterStart = getQuarterStartDate(value);
+  if (!quarterStart) {
+    return { year: "", quarter: "" };
+  }
+
+  return {
+    year: String(quarterStart.getFullYear()),
+    quarter: String(Math.floor(quarterStart.getMonth() / 3) + 1)
+  };
+}
+
+function composeDueQuarterValue(year, quarter) {
+  const normalizedYear = String(year || "").replace(/\D/g, "").slice(0, 4);
+  const normalizedQuarter = String(quarter || "");
+  if (normalizedYear.length !== 4 || !/^[1-4]$/.test(normalizedQuarter)) {
+    return "";
+  }
+
+  const month = (Number(normalizedQuarter) - 1) * 3 + 1;
+  return `${normalizedYear}-${String(month).padStart(2, "0")}-01`;
+}
+
+function syncFormDueQuarter() {
+  state.form.dueDate = composeDueQuarterValue(state.form.dueYear, state.form.dueQuarter);
 }
 
 function createEmptyAmountLine() {
@@ -561,6 +801,8 @@ function describeFocusableElement(element) {
     selectorParts.push(`[data-form-field="${escapeSelectorValue(element.dataset.formField)}"]`);
   } else if (element.dataset.filterField) {
     selectorParts.push(`[data-filter-field="${escapeSelectorValue(element.dataset.filterField)}"]`);
+  } else if (element.dataset.reportField) {
+    selectorParts.push(`[data-report-field="${escapeSelectorValue(element.dataset.reportField)}"]`);
   } else if (element.dataset.lineField) {
     selectorParts.push(`[data-line-field="${escapeSelectorValue(element.dataset.lineField)}"]`);
     selectorParts.push(`[data-index="${escapeSelectorValue(element.dataset.index)}"]`);
@@ -604,7 +846,7 @@ function queueActiveElementRestore() {
 }
 
 function queueModalViewportRestore() {
-  const modalBody = app.querySelector(".lead-modal-body");
+  const modalBody = app.querySelector("[data-modal-body]");
   if (!(modalBody instanceof HTMLElement)) {
     return;
   }
@@ -622,7 +864,7 @@ function restoreModalViewport() {
     return;
   }
 
-  const modalBody = app.querySelector(".lead-modal-body");
+  const modalBody = app.querySelector("[data-modal-body]");
   if (!(modalBody instanceof HTMLElement)) {
     return;
   }
@@ -671,7 +913,7 @@ function getFocusableElements(root) {
 }
 
 function syncModalPresentation() {
-  document.body.style.overflow = isLeadFormOpen() ? "hidden" : "";
+  document.body.style.overflow = isAnyModalOpen() ? "hidden" : "";
 }
 
 function finalizeRender({ syncHeader = false } = {}) {
@@ -679,8 +921,60 @@ function finalizeRender({ syncHeader = false } = {}) {
   if (syncHeader) {
     syncHostHeader();
   }
+  syncReportSummaryFooter();
   restoreModalViewport();
   restorePendingFocus();
+}
+
+function syncReportSummaryFooter() {
+  const tableScroll = app.querySelector("[data-report-table-scroll]");
+  const summaryScroll = app.querySelector("[data-report-summary-scroll]");
+  const frozenScroll = app.querySelector("[data-report-frozen-scroll]");
+
+  if (
+    !(tableScroll instanceof HTMLElement)
+    || !(summaryScroll instanceof HTMLElement)
+    || !(frozenScroll instanceof HTMLElement)
+  ) {
+    if (reportTableScrollElement) {
+      reportTableScrollElement.removeEventListener("scroll", onReportTableScroll);
+    }
+    reportFrozenScrollElement = null;
+
+    reportTableScrollElement = null;
+    reportSummaryScrollElement = null;
+    return;
+  }
+
+  if (reportTableScrollElement !== tableScroll) {
+    if (reportTableScrollElement) {
+      reportTableScrollElement.removeEventListener("scroll", onReportTableScroll);
+    }
+
+    reportTableScrollElement = tableScroll;
+    reportTableScrollElement.addEventListener("scroll", onReportTableScroll, { passive: true });
+  }
+
+  reportSummaryScrollElement = summaryScroll;
+  reportFrozenScrollElement = frozenScroll;
+  reportSummaryScrollElement.scrollLeft = reportTableScrollElement.scrollLeft;
+  reportFrozenScrollElement.scrollTop = reportTableScrollElement.scrollTop;
+}
+
+function onReportTableScroll() {
+  if (
+    !reportTableScrollElement
+    || !reportSummaryScrollElement
+    || !reportFrozenScrollElement
+    || syncingReportScroll
+  ) {
+    return;
+  }
+
+  syncingReportScroll = true;
+  reportSummaryScrollElement.scrollLeft = reportTableScrollElement.scrollLeft;
+  reportFrozenScrollElement.scrollTop = reportTableScrollElement.scrollTop;
+  syncingReportScroll = false;
 }
 
 function openLeadForm({ lead = null, opener = null } = {}) {
@@ -699,6 +993,28 @@ function openLeadForm({ lead = null, opener = null } = {}) {
 function closeLeadForm({ nextFocusRequest = null } = {}) {
   state.formModalOpen = false;
   state.selectedLeadId = null;
+  queueFocusRestore(nextFocusRequest || modalTriggerFocusRequest);
+  modalTriggerFocusRequest = null;
+}
+
+function openSalesReportModal({ opener = null } = {}) {
+  modalTriggerFocusRequest = describeFocusableElement(opener) || describeFocusableElement(document.activeElement);
+  state.reportFilters = {
+    ...createDefaultReportFilters(state.reportFilters.ownerSubjectId),
+    ...state.reportFilters
+  };
+  if (!isAdminUser()) {
+    state.reportFilters.ownerSubjectId = state.shellContext?.user?.subjectId || "";
+  }
+  state.reportModalOpen = true;
+  state.toast = null;
+  queueFocusRestore(createFocusRequest("[data-modal-root] [data-testid=\"report-from-date\"]"));
+  render();
+  void loadSalesMonthlyReport({ preserveToast: true });
+}
+
+function closeSalesReportModal({ nextFocusRequest = null } = {}) {
+  state.reportModalOpen = false;
   queueFocusRestore(nextFocusRequest || modalTriggerFocusRequest);
   modalTriggerFocusRequest = null;
 }
@@ -870,6 +1186,29 @@ function buildLeadExportPath(filters) {
   return query ? `/api/v1/leads/export?${query}` : "/api/v1/leads/export";
 }
 
+function buildSalesMonthlyReportPath(filters, { exportMode = false } = {}) {
+  const params = new URLSearchParams();
+  const reportFilters = filters || createDefaultReportFilters();
+
+  const setParam = (key, value) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      params.set(key, String(value));
+    }
+  };
+
+  setParam("fromDate", reportFilters.fromDate);
+  setParam("toDate", reportFilters.toDate);
+  setParam("ownerSubjectId", reportFilters.ownerSubjectId);
+  setParam("locale", currentLocale());
+
+  const query = params.toString();
+  const basePath = exportMode
+    ? "/api/v1/statistics-report/export"
+    : "/api/v1/statistics-report";
+
+  return query ? `${basePath}?${query}` : basePath;
+}
+
 function triggerBrowserDownload(blob, fileName) {
   const downloadUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -894,6 +1233,73 @@ async function exportLeads(filters) {
     render();
   } catch (error) {
     state.exporting = false;
+    state.toast = {
+      type: "error",
+      message: String(error.message || error)
+    };
+    render();
+  }
+}
+
+function validateSalesMonthlyReportFilters(filters) {
+  if (!filters.fromDate || !filters.toDate) {
+    return translate("validation.reportDatesRequired");
+  }
+
+  if (String(filters.fromDate).localeCompare(String(filters.toDate)) > 0) {
+    return translate("validation.reportDateRange");
+  }
+
+  return "";
+}
+
+async function loadSalesMonthlyReport({ preserveToast = false } = {}) {
+  const validationMessage = validateSalesMonthlyReportFilters(state.reportFilters);
+  if (validationMessage) {
+    state.toast = { type: "error", message: validationMessage };
+    render();
+    return;
+  }
+
+  state.reportLoading = true;
+  if (!preserveToast) {
+    state.toast = null;
+  }
+  render();
+
+  try {
+    state.reportData = await apiRequest(buildSalesMonthlyReportPath(state.reportFilters));
+    state.reportLoading = false;
+    render();
+  } catch (error) {
+    state.reportLoading = false;
+    state.toast = {
+      type: "error",
+      message: String(error.message || error)
+    };
+    render();
+  }
+}
+
+async function exportSalesMonthlyReport() {
+  const validationMessage = validateSalesMonthlyReportFilters(state.reportFilters);
+  if (validationMessage) {
+    state.toast = { type: "error", message: validationMessage };
+    render();
+    return;
+  }
+
+  state.reportExporting = true;
+  state.toast = null;
+  render();
+
+  try {
+    const download = await apiDownload(buildSalesMonthlyReportPath(state.reportFilters, { exportMode: true }));
+    triggerBrowserDownload(download.blob, download.fileName);
+    state.reportExporting = false;
+    render();
+  } catch (error) {
+    state.reportExporting = false;
     state.toast = {
       type: "error",
       message: String(error.message || error)
@@ -1004,7 +1410,47 @@ function onClick(event) {
   }
 
   if (action === "export-report") {
-    void exportLeads(DEFAULT_FILTERS);
+    openSalesReportModal({ opener: target });
+    return;
+  }
+
+  if (action === "open-sales-report") {
+    openSalesReportModal({ opener: target });
+    return;
+  }
+
+  if (action === "close-sales-report") {
+    closeSalesReportModal();
+    render();
+    return;
+  }
+
+  if (action === "refresh-sales-report") {
+    void loadSalesMonthlyReport();
+    return;
+  }
+
+  if (action === "export-sales-report") {
+    void exportSalesMonthlyReport();
+    return;
+  }
+
+  if (action === "sort-statistics-report") {
+    const sortKey = target.dataset.sortKey || "";
+    if (!sortKey) {
+      return;
+    }
+
+    state.reportSort = state.reportSort.key === sortKey
+      ? {
+          key: sortKey,
+          direction: state.reportSort.direction === "desc" ? "asc" : "desc"
+        }
+      : {
+          key: sortKey,
+          direction: "desc"
+        };
+    render();
     return;
   }
 
@@ -1021,6 +1467,12 @@ function onClick(event) {
 }
 
 function onInput(event) {
+  const reportField = event.target.dataset.reportField;
+  if (reportField) {
+    state.reportFilters[reportField] = event.target.value;
+    return;
+  }
+
   const field = event.target.dataset.formField;
   if (field) {
     if (field === "customerSearch") {
@@ -1044,6 +1496,10 @@ function onInput(event) {
 
     queueActiveElementRestore();
     state.form[field] = event.target.value;
+    if (field === "dueYear") {
+      state.form.dueYear = String(state.form.dueYear || "").replace(/\D/g, "").slice(0, 4);
+      syncFormDueQuarter();
+    }
     if (field === "customerId") {
       state.form.projectName = "";
     }
@@ -1082,6 +1538,14 @@ function onInput(event) {
 }
 
 function onChange(event) {
+  const reportField = event.target.dataset.reportField;
+  if (reportField) {
+    queueActiveElementRestore();
+    state.reportFilters[reportField] = event.target.value;
+    render();
+    return;
+  }
+
   const questionCode = event.target.dataset.questionCode;
   if (questionCode) {
     queueActiveElementRestore();
@@ -1100,6 +1564,9 @@ function onChange(event) {
   if (toggleField) {
     queueActiveElementRestore();
     state.form[toggleField] = event.target.value;
+    if (toggleField === "dueQuarter") {
+      syncFormDueQuarter();
+    }
     if (state.validationErrors.length || state.showValidationSummary) {
       refreshValidationState();
     }
@@ -1108,6 +1575,12 @@ function onChange(event) {
 }
 
 function onSubmit(event) {
+  if (event.target.closest("[data-report-filters-form]")) {
+    event.preventDefault();
+    void loadSalesMonthlyReport();
+    return;
+  }
+
   if (!event.target.closest("[data-lead-form]")) {
     return;
   }
@@ -1117,22 +1590,32 @@ function onSubmit(event) {
 }
 
 function onKeyDown(event) {
-  if (!isLeadFormOpen()) {
+  if (!isAnyModalOpen()) {
     return;
   }
 
-  if (event.key === "Escape" && !state.saving) {
+  if (event.key === "Escape" && !state.saving && !state.reportLoading && !state.reportExporting) {
     event.preventDefault();
-    clearValidationState();
-    state.toast = null;
-    closeLeadForm();
+    if (isLeadFormOpen()) {
+      clearValidationState();
+      state.toast = null;
+      closeLeadForm();
+    } else if (isReportModalOpen()) {
+      closeSalesReportModal();
+    }
     render();
     return;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && !state.saving) {
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && isLeadFormOpen() && !state.saving) {
     event.preventDefault();
     void saveLead();
+    return;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && isReportModalOpen() && !state.reportLoading) {
+    event.preventDefault();
+    void loadSalesMonthlyReport();
     return;
   }
 
@@ -1244,6 +1727,15 @@ function validateForm() {
     });
   }
 
+  if (!state.form.dueDate) {
+    errors.push({
+      id: "validation-due-date",
+      fieldKey: "dueDate",
+      selector: "#due-date-year",
+      message: translate("validation.dueDateRequired")
+    });
+  }
+
   const meaningfulLines = getMeaningfulAmountLines();
   meaningfulLines.forEach((line, index) => {
     if (!line.workTypeId) {
@@ -1273,15 +1765,20 @@ function validateForm() {
     }
   });
 
+  const statusVisible = shouldShowOfferStatus();
+  const effectiveOfferStatus = statusVisible ? state.form.offerStatus : "Open";
   const actualAwardedAmount = parseAmountInput(state.form.actualAwardedAmount);
-  if (state.form.offerStatus === "Win" && actualAwardedAmount.isEmpty) {
+  if (effectiveOfferStatus === "Win" && actualAwardedAmount.isEmpty) {
     errors.push({
       id: "validation-actual-awarded-required",
       fieldKey: "actualAwardedAmount",
       selector: "#actual-awarded",
       message: translate("validation.actualAwardedRequired")
     });
-  } else if ((!actualAwardedAmount.isEmpty && !actualAwardedAmount.isValid) || (state.form.offerStatus === "Win" && (!actualAwardedAmount.value || actualAwardedAmount.value <= 0))) {
+  } else if (
+    (!actualAwardedAmount.isEmpty && !actualAwardedAmount.isValid)
+    || (effectiveOfferStatus === "Win" && (!actualAwardedAmount.value || actualAwardedAmount.value <= 0))
+  ) {
     errors.push({
       id: "validation-actual-awarded-invalid",
       fieldKey: "actualAwardedAmount",
@@ -1301,22 +1798,32 @@ function getMeaningfulAmountLines() {
 
 function buildLeadPayload() {
   const projectMatch = getProjectMatch(state.form.customerId, state.form.projectName);
+  const qualificationAnswers = shouldShowQualificationQuestions()
+    ? (state.metadata?.qualificationQuestions || []).map((question) => ({
+        questionCode: question.code,
+        answer: Object.prototype.hasOwnProperty.call(state.form.qualificationAnswers, question.code)
+          ? state.form.qualificationAnswers[question.code]
+          : null
+      }))
+    : (state.metadata?.qualificationQuestions || []).map((question) => ({
+        questionCode: question.code,
+        answer: null
+      }));
+  const offerStatus = shouldShowOfferStatus() ? state.form.offerStatus : "Open";
+
   return {
     customerId: state.form.customerId,
     projectId: projectMatch ? projectMatch.id : null,
     projectName: state.form.projectName.trim(),
     comments: state.form.comments.trim(),
-    qualificationAnswers: (state.metadata?.qualificationQuestions || []).map((question) => ({
-      questionCode: question.code,
-      answer: Object.prototype.hasOwnProperty.call(state.form.qualificationAnswers, question.code)
-        ? state.form.qualificationAnswers[question.code]
-        : null
-    })),
+    qualificationAnswers,
     stage: state.form.stage || null,
-    isPerpetual: state.form.isPerpetual === "" ? null : state.form.isPerpetual === "true",
+    isPerpetual: shouldShowPerpetualContract()
+      ? (state.form.isPerpetual === "" ? null : state.form.isPerpetual === "true")
+      : null,
     dueDate: state.form.dueDate || null,
-    offerStatus: state.form.offerStatus,
-    actualAwardedAmount: parseAmountInput(state.form.actualAwardedAmount).value,
+    offerStatus,
+    actualAwardedAmount: offerStatus === "Win" ? parseAmountInput(state.form.actualAwardedAmount).value : null,
     amountLines: getMeaningfulAmountLines().map((line) => ({
       id: line.id || null,
       workTypeId: line.workTypeId,
@@ -1345,7 +1852,9 @@ function mapLeadToForm(lead) {
       lead.isPerpetual === null || lead.isPerpetual === undefined
         ? ""
         : String(lead.isPerpetual),
-    dueDate: lead.dueDate || "",
+    dueYear: toQuarterParts(lead.dueDate).year,
+    dueQuarter: toQuarterParts(lead.dueDate).quarter,
+    dueDate: normalizeDueQuarterValue(lead.dueDate),
     offerStatus: lead.offerStatus || "Open",
     actualAwardedAmount:
       lead.actualAwardedAmount === null || lead.actualAwardedAmount === undefined
@@ -1408,7 +1917,7 @@ function getFilteredLeads() {
       return false;
     }
 
-    if (state.filters.offerStatus && lead.offerStatus !== state.filters.offerStatus) {
+    if (state.filters.offerStatus && getLeadOfferStatus(lead) !== state.filters.offerStatus) {
       return false;
     }
 
@@ -1475,11 +1984,11 @@ function getWorkTypeColor(code, index = 0) {
 }
 
 function getDueInDays(dateValue) {
-  if (!dateValue) {
+  const dueDate = getQuarterEndDate(dateValue);
+  if (!dueDate) {
     return null;
   }
 
-  const dueDate = new Date(`${dateValue}T00:00:00`);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.floor((dueDate - today) / 86400000);
@@ -1498,16 +2007,18 @@ function buildForecastTimeline(leads) {
       return;
     }
 
-    const key = lead.dueDate.slice(0, 7);
-    monthlyMap.set(key, (monthlyMap.get(key) || 0) + lead.metrics.forecastAmount);
+    const key = getQuarterKey(lead.dueDate);
+    if (key) {
+      monthlyMap.set(key, (monthlyMap.get(key) || 0) + lead.metrics.forecastAmount);
+    }
   });
 
   const start = new Date();
-  start.setDate(1);
+  start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1);
 
   const timeline = Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
-    const key = toMonthKey(date);
+    const date = new Date(start.getFullYear(), start.getMonth() + (index * 3), 1);
+    const key = `${date.getFullYear()}-Q${Math.floor(date.getMonth() / 3) + 1}`;
     return {
       id: key,
       label: key,
@@ -1551,12 +2062,16 @@ function groupByMetrics(items, labelSelector, valueSelector, idSelector = null) 
 
 function getDashboardModel() {
   const allLeads = state.leads || [];
-  const activeLeads = allLeads.filter((lead) =>
-    lead.offerStatus === "Open" || lead.offerStatus === "Suspended"
-  );
+  const activeLeads = allLeads.filter((lead) => {
+    const offerStatus = getLeadOfferStatus(lead);
+    return offerStatus === null || offerStatus === "Open" || offerStatus === "Suspended";
+  });
   const forecastEligible = activeLeads.filter((lead) => !lead.isIncomplete);
-  const wins = allLeads.filter((lead) => lead.offerStatus === "Win");
-  const closedLeads = allLeads.filter((lead) => lead.offerStatus === "Win" || lead.offerStatus === "Lose" || lead.offerStatus === "Cancelled");
+  const wins = allLeads.filter((lead) => getLeadOfferStatus(lead) === "Win");
+  const closedLeads = allLeads.filter((lead) => {
+    const offerStatus = getLeadOfferStatus(lead);
+    return offerStatus === "Win" || offerStatus === "Lose" || offerStatus === "Cancelled";
+  });
 
   const pipelineByOwner = groupByMetrics(
     activeLeads,
@@ -1588,7 +2103,7 @@ function getDashboardModel() {
   });
 
   const riskLeads = allLeads.filter((lead) => {
-    if (lead.isIncomplete || lead.offerStatus === "Suspended") {
+    if (lead.isIncomplete || getLeadOfferStatus(lead) === "Suspended") {
       return true;
     }
 
@@ -1655,7 +2170,7 @@ function getDashboardModel() {
   });
 
   const statusMix = OfferStatusValues.map((status) => {
-    const matchingLeads = allLeads.filter((lead) => lead.offerStatus === status);
+    const matchingLeads = allLeads.filter((lead) => getLeadOfferStatus(lead) === status);
     return {
       id: status,
       label: translateOfferStatus(status),
@@ -1729,7 +2244,7 @@ function computeDraftMetrics() {
     (state.metadata?.stageCoefficients || []).map((item) => [item.stage, Number(item.value)])
   );
   const questionMap = new Map(
-    (state.metadata?.qualificationQuestions || []).map((item) => [item.code, item])
+    (shouldShowQualificationQuestions() ? (state.metadata?.qualificationQuestions || []) : []).map((item) => [item.code, item])
   );
   const workTypesById = new Map((state.metadata?.workTypes || []).map((item) => [item.id, item]));
 
@@ -1746,7 +2261,8 @@ function computeDraftMetrics() {
     .filter((line) => line.workType);
 
   const totalAmount = lines.reduce((total, line) => total + line.amount, 0);
-  const priceListAnswer = state.form.qualificationAnswers["customer-under-price-list"] === true;
+  const priceListAnswer = shouldShowQualificationQuestions()
+    && state.form.qualificationAnswers["customer-under-price-list"] === true;
   const qualificationScore = priceListAnswer
     ? 100
     : Array.from(questionMap.values()).reduce((total, question) => {
@@ -1759,12 +2275,13 @@ function computeDraftMetrics() {
   const qualificationContribution = qualificationScore * 0.3;
   const stageContribution = stageCoefficientMap.get(state.form.stage) || 0;
   const chanceToWin = Math.min(100, qualificationContribution + stageContribution);
-  const perpetual = state.form.isPerpetual === "true";
+  const perpetual = shouldShowPerpetualContract() && state.form.isPerpetual === "true";
   const forecastAmount = perpetual ? totalAmount : totalAmount * (chanceToWin / 100);
   const highConfidence = perpetual || chanceToWin >= 50 ? forecastAmount : 0;
+  const effectiveOfferStatus = shouldShowOfferStatus() ? state.form.offerStatus : "Open";
   const actualAwardedAmount = parseAmountInput(state.form.actualAwardedAmount);
   const wonAmount =
-    state.form.offerStatus === "Win" && actualAwardedAmount.isValid && actualAwardedAmount.value
+    effectiveOfferStatus === "Win" && actualAwardedAmount.isValid && actualAwardedAmount.value
       ? actualAwardedAmount.value
       : 0;
 
@@ -1775,13 +2292,13 @@ function computeDraftMetrics() {
   if (!state.form.dueDate) {
     missingFields.push(translate("form.dueDate"));
   }
-  if (state.form.isPerpetual === "") {
+  if (shouldShowPerpetualContract() && state.form.isPerpetual === "") {
     missingFields.push(translate("form.perpetualContract"));
   }
   if (lines.length === 0) {
     missingFields.push(translate("form.amountLines"));
   }
-  if (state.form.offerStatus === "Win" && (!actualAwardedAmount.isValid || actualAwardedAmount.isEmpty || !actualAwardedAmount.value)) {
+  if (effectiveOfferStatus === "Win" && (!actualAwardedAmount.isValid || actualAwardedAmount.isEmpty || !actualAwardedAmount.value)) {
     missingFields.push(translate("form.actualAwardedAmount"));
   }
 
@@ -1858,7 +2375,7 @@ function render() {
   const dashboard = getDashboardModel();
   const filteredLeads = getFilteredLeads();
   const draftMetrics = computeDraftMetrics();
-  const shellContentAttributes = isLeadFormOpen() ? " aria-hidden=\"true\" inert" : "";
+  const shellContentAttributes = isAnyModalOpen() ? " aria-hidden=\"true\" inert" : "";
 
   app.innerHTML = `
     <div class="shell" dir="${currentDirection()}">
@@ -1869,6 +2386,7 @@ function render() {
         ${state.view === "dashboard" ? renderDashboard(dashboard) : renderLeadList(filteredLeads)}
       </div>
       ${isLeadFormOpen() ? renderLeadForm(draftMetrics) : ""}
+      ${isReportModalOpen() ? renderSalesMonthlyReportModal() : ""}
     </div>
   `;
   finalizeRender({ syncHeader: true });
@@ -1906,6 +2424,7 @@ function renderToast() {
 }
 
 function renderDashboard(model) {
+  const showAdminAnalytics = isAdminUser();
   const totalStatuses = model.statusMix.reduce((total, item) => total + item.count, 0);
   const totalWorkTypes = model.workTypeBreakdown.reduce((total, item) => total + item.value, 0);
   const metricCards = [
@@ -2009,15 +2528,15 @@ function renderDashboard(model) {
             model.spotlightCustomer ? formatLeadCount(model.spotlightCustomer.count) : "",
             model.spotlightCustomer ? formatAmount(model.spotlightCustomer.value) : ""
           )}
-          ${renderSpotlightCard(
+          ${showAdminAnalytics ? renderSpotlightCard(
             translate("dashboard.topOwner"),
             model.spotlightOwner ? model.spotlightOwner.label : translate("dashboard.emptySpotlight"),
             model.spotlightOwner ? formatLeadCount(model.spotlightOwner.count) : "",
             model.spotlightOwner ? formatAmount(model.spotlightOwner.value) : ""
-          )}
+          ) : ""}
         </div>
         <div class="dashboard-hero-actions">
-          <button type="button" class="ghost-button" data-action="export-report" ${state.exporting ? "disabled" : ""}>${escapeHtml(state.exporting ? translate("common.exporting") : translate("dashboard.report"))}</button>
+          <button type="button" class="ghost-button" data-action="open-sales-report">${escapeHtml(translate("dashboard.salesMonthlyReport"))}</button>
           <button type="button" class="primary-button" data-action="new-lead" data-testid="dashboard-new-lead">${escapeHtml(translate("nav.newLead"))}</button>
           <button type="button" class="soft-button" data-view="list">${escapeHtml(translate("dashboard.exploreList"))}</button>
         </div>
@@ -2078,6 +2597,7 @@ function renderDashboard(model) {
         }))
       })}
     </section>
+    ${showAdminAnalytics ? `
     <section class="dashboard-visual-grid">
       <article class="table-card analytics-card">
         <div class="card-heading">
@@ -2098,6 +2618,7 @@ function renderDashboard(model) {
         ${renderLeaderboard(model.pipelineByCustomer, "customerId")}
       </article>
     </section>
+    ` : ""}
     <section class="dashboard-visual-grid">
       <article class="table-card analytics-card">
         <div class="card-heading">
@@ -2116,7 +2637,9 @@ function renderDashboard(model) {
               </span>
               <span class="risk-meta">
                 <span class="${lead.isIncomplete ? "warning-text" : "danger-text"}">
-                  ${lead.isIncomplete ? escapeHtml(translate("common.incomplete")) : escapeHtml(translateOfferStatus(lead.offerStatus))}
+                  ${lead.isIncomplete
+                    ? escapeHtml(translate("common.incomplete"))
+                    : escapeHtml(getLeadOfferStatus(lead) ? translateOfferStatus(getLeadOfferStatus(lead)) : (lead.stage ? translateStage(lead.stage) : translate("common.notSet")))}
                 </span>
                 <span class="muted">${lead.dueDate ? escapeHtml(formatDate(lead.dueDate)) : escapeHtml(translate("common.noDueDate"))}</span>
               </span>
@@ -2372,19 +2895,23 @@ function renderHealthMetrics(items) {
 function renderLeadList(leads) {
   const customers = state.metadata?.customers || [];
   const workTypes = state.metadata?.workTypes || [];
+  const quarterOptions = getDueQuarterOptions();
+  const showOwnerColumn = isAdminUser();
 
   return `
     <section class="panel">
       <div class="filter-grid">
         ${renderFilterField(translate("list.search"), "search", "search", translate("list.searchPlaceholder"))}
-        ${renderSelectFilter(translate("list.owner"), "ownerSubjectId", getOwners().map((owner) => ({ value: owner.subjectId, label: owner.displayName })))}
+        ${showOwnerColumn
+          ? renderSelectFilter(translate("list.owner"), "ownerSubjectId", getOwners().map((owner) => ({ value: owner.subjectId, label: owner.displayName })))
+          : ""}
         ${renderSelectFilter(translate("list.customer"), "customerId", customers.map((customer) => ({ value: customer.id, label: customer.name })))}
         ${renderSelectFilter(translate("list.workType"), "workTypeId", workTypes.filter((item) => item.isActive).map((workType) => ({ value: workType.id, label: translateWorkType(workType) })))}
         ${renderSelectFilter(translate("list.contractType"), "contractType", [{ value: "perpetual", label: translate("list.contract.perpetual") }, { value: "auction", label: translate("list.contract.auction") }])}
         ${renderSelectFilter(translate("list.stage"), "stage", StageValues.map((value) => ({ value, label: translateStage(value) })))}
         ${renderSelectFilter(translate("list.offerStatus"), "offerStatus", OfferStatusValues.map((value) => ({ value, label: translateOfferStatus(value) })))}
-        ${renderFilterField(translate("list.dueFrom"), "date", "dueDateFrom")}
-        ${renderFilterField(translate("list.dueTo"), "date", "dueDateTo")}
+        ${renderSelectFilter(translate("list.dueFrom"), "dueDateFrom", quarterOptions)}
+        ${renderSelectFilter(translate("list.dueTo"), "dueDateTo", quarterOptions)}
         ${renderFilterField(translate("list.amountMin"), "number", "amountMin")}
         ${renderFilterField(translate("list.amountMax"), "number", "amountMax")}
         ${renderSelectFilter(translate("list.sortBy"), "sortBy", [
@@ -2408,7 +2935,7 @@ function renderLeadList(leads) {
           <thead>
             <tr>
               <th>${escapeHtml(translate("table.customerProject"))}</th>
-              <th>${escapeHtml(translate("list.owner"))}</th>
+              ${showOwnerColumn ? `<th>${escapeHtml(translate("list.owner"))}</th>` : ""}
               <th>${escapeHtml(translate("table.status"))}</th>
               <th>${escapeHtml(translate("list.stage"))}</th>
               <th>${escapeHtml(translate("table.total"))}</th>
@@ -2426,8 +2953,10 @@ function renderLeadList(leads) {
                   <strong>${escapeHtml(lead.customer.name)}</strong><br />
                   <span class="muted">${escapeHtml(lead.project.name)}</span>
                 </td>
-                <td>${escapeHtml(lead.owner.displayName)}</td>
-                <td><span class="chip status-${lead.offerStatus.toLowerCase()}">${escapeHtml(translateOfferStatus(lead.offerStatus))}</span></td>
+                ${showOwnerColumn ? `<td>${escapeHtml(lead.owner.displayName)}</td>` : ""}
+                <td>${getLeadOfferStatus(lead)
+                  ? `<span class="chip status-${lead.offerStatus.toLowerCase()}">${escapeHtml(translateOfferStatus(lead.offerStatus))}</span>`
+                  : `<span class="muted">${escapeHtml(translate("common.notSet"))}</span>`}</td>
                 <td>${escapeHtml(lead.stage ? translateStage(lead.stage) : translate("common.incomplete"))}</td>
                 <td>${formatAmount(lead.metrics.totalAmount)}</td>
                 <td>${formatAmount(lead.metrics.forecastAmount)}</td>
@@ -2438,7 +2967,7 @@ function renderLeadList(leads) {
               </tr>
             `).join("") || `
               <tr>
-                <td colspan="10" class="empty-state">${escapeHtml(translate("list.noResults"))}</td>
+                <td colspan="${showOwnerColumn ? "10" : "9"}" class="empty-state">${escapeHtml(translate("list.noResults"))}</td>
               </tr>
             `}
           </tbody>
@@ -2462,6 +2991,10 @@ function renderLeadForm(draftMetrics) {
     .filter((item) => item.isActive || amountLines.some((line) => line.workTypeId === item.id))
     .sort((left, right) => left.sortOrder - right.sortOrder);
   const customerProjects = projects.filter((project) => project.customerId === state.form.customerId);
+  const showQuestions = shouldShowQualificationQuestions();
+  const showOfferStatusSection = shouldShowOfferStatus();
+  const showPerpetualContractField = shouldShowPerpetualContract();
+  const showActualAwardedAmount = showOfferStatusSection && state.form.offerStatus === "Win";
 
   return `
     <section class="lead-modal-overlay">
@@ -2474,10 +3007,10 @@ function renderLeadForm(draftMetrics) {
             </div>
             <button type="button" class="icon-button" data-action="cancel-form" data-testid="close-lead-modal" aria-label="${escapeHtml(translate("common.close"))}" title="${escapeHtml(translate("common.close"))}">X</button>
           </header>
-          <div class="lead-modal-body">
+          <div class="lead-modal-body" data-modal-body>
             <section class="form-layout">
               <div>
-                <article class="panel form-section">
+        <article class="panel form-section">
           <div class="field-grid">
             <div class="field">
               <label for="customer-search">${escapeHtml(translate("form.customer"))}</label>
@@ -2493,6 +3026,56 @@ function renderLeadForm(draftMetrics) {
                 ${customerProjects.map((project) => `<option value="${escapeHtml(project.name)}"></option>`).join("")}
               </datalist>
             </div>
+          </div>
+          <div class="field">
+            <label for="comments">${escapeHtml(translate("form.comments"))}</label>
+            <textarea id="comments" data-form-field="comments" data-testid="comments-input" placeholder="${escapeHtml(translate("form.commentsPlaceholder"))}">${escapeHtml(state.form.comments)}</textarea>
+          </div>
+          <fieldset class="binary-fieldset field-span-full">
+            <legend>${escapeHtml(translate("form.stage"))}</legend>
+            <div class="stage-picker" data-testid="stage-picker">
+              ${StageValues.map((stage) => `
+                <label>
+                  <input type="radio" name="lead-stage" value="${stage}" data-toggle-field="stage" ${state.form.stage === stage ? "checked" : ""} />
+                  ${escapeHtml(translateStage(stage))}
+                </label>
+              `).join("")}
+            </div>
+          </fieldset>
+        </article>
+
+        ${showQuestions ? `
+        <article class="panel form-section">
+          <div class="question-list">
+            ${questions.map((question, index) => `
+              <div class="question-row">
+                <div class="question-row-copy">
+                  <div class="question-row-label">
+                    <span class="question-row-index">${index + 1}.</span>
+                    <span>${escapeHtml(translateQualificationQuestion(question))}</span>
+                  </div>
+                  <span class="chip">${question.isOverrideRule ? escapeHtml(translate("form.overrideRule")) : escapeHtml(translate("form.weight", { value: question.weight }))}</span>
+                </div>
+                <div class="binary-options question-row-controls" role="group" aria-label="${escapeHtml(translateQualificationQuestion(question))}">
+                  <label>
+                    <input type="radio" name="question-${question.code}" value="true" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === true ? "checked" : ""} />
+                    ${escapeHtml(translate("common.yes"))}
+                  </label>
+                  <label>
+                    <input type="radio" name="question-${question.code}" value="false" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === false ? "checked" : ""} />
+                    ${escapeHtml(translate("common.no"))}
+                  </label>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </article>
+        ` : ""}
+
+        <article class="panel form-section">
+          <h3>${escapeHtml(translate("form.pipelineStageOutcome"))}</h3>
+          <div class="field-grid">
+            ${showOfferStatusSection ? `
             <fieldset class="binary-fieldset field-span-full">
               <legend>${escapeHtml(translate("form.offerStatus"))}</legend>
               <div class="segmented-options" data-testid="offer-status-picker">
@@ -2504,48 +3087,8 @@ function renderLeadForm(draftMetrics) {
                 `).join("")}
               </div>
             </fieldset>
-          </div>
-          <div class="field">
-            <label for="comments">${escapeHtml(translate("form.comments"))}</label>
-            <textarea id="comments" data-form-field="comments" data-testid="comments-input" placeholder="${escapeHtml(translate("form.commentsPlaceholder"))}">${escapeHtml(state.form.comments)}</textarea>
-          </div>
-        </article>
-
-        <article class="panel form-section">
-          <div class="summary-grid">
-            ${questions.map((question, index) => `
-              <fieldset class="binary-fieldset">
-                <legend>${index + 1}. ${escapeHtml(translateQualificationQuestion(question))}</legend>
-                <div class="binary-options">
-                  <label>
-                    <input type="radio" name="question-${question.code}" value="true" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === true ? "checked" : ""} />
-                    ${escapeHtml(translate("common.yes"))}
-                  </label>
-                  <label>
-                    <input type="radio" name="question-${question.code}" value="false" data-question-code="${question.code}" ${state.form.qualificationAnswers[question.code] === false ? "checked" : ""} />
-                    ${escapeHtml(translate("common.no"))}
-                  </label>
-                  <span class="chip">${question.isOverrideRule ? escapeHtml(translate("form.overrideRule")) : escapeHtml(translate("form.weight", { value: question.weight }))}</span>
-                </div>
-              </fieldset>
-            `).join("")}
-          </div>
-        </article>
-
-        <article class="panel form-section">
-          <h3>${escapeHtml(translate("form.pipelineStageOutcome"))}</h3>
-          <div class="field-grid">
-            <fieldset class="binary-fieldset">
-              <legend>${escapeHtml(translate("form.stage"))}</legend>
-              <div class="stage-picker" data-testid="stage-picker">
-                ${StageValues.map((stage) => `
-                  <label>
-                    <input type="radio" name="lead-stage" value="${stage}" data-toggle-field="stage" ${state.form.stage === stage ? "checked" : ""} />
-                    ${escapeHtml(translateStage(stage))}
-                  </label>
-                `).join("")}
-              </div>
-            </fieldset>
+            ` : ""}
+            ${showPerpetualContractField ? `
             <fieldset class="binary-fieldset">
               <legend>${escapeHtml(translate("form.perpetualContract"))}</legend>
               <div class="binary-options" data-testid="perpetual-toggle">
@@ -2559,16 +3102,28 @@ function renderLeadForm(draftMetrics) {
                 </label>
               </div>
             </fieldset>
+            ` : ""}
             <div class="field">
-              <label for="due-date">${escapeHtml(translate("form.dueDate"))}</label>
-              <input id="due-date" type="date" value="${escapeHtml(state.form.dueDate)}" data-form-field="dueDate" data-testid="due-date-input" />
+              <label for="due-date-year">${escapeHtml(translate("form.year"))}</label>
+              <input id="due-date-year" type="text" inputmode="numeric" maxlength="4" value="${escapeHtml(state.form.dueYear)}" data-form-field="dueYear" data-testid="due-year-input" autocomplete="off" placeholder="2026" ${validationFields.has("dueDate") ? "aria-invalid=\"true\"" : ""} />
             </div>
-          </div>
-          <div class="field-grid">
+            <fieldset class="binary-fieldset">
+              <legend>${escapeHtml(translate("form.quarter"))}</legend>
+              <div class="binary-options" data-testid="due-quarter-picker">
+                ${[1, 2, 3, 4].map((quarter) => `
+                  <label>
+                    <input type="radio" name="due-quarter" value="${quarter}" data-toggle-field="dueQuarter" ${state.form.dueQuarter === String(quarter) ? "checked" : ""} />
+                    ${escapeHtml(getQuarterChoiceLabel(quarter))}
+                  </label>
+                `).join("")}
+              </div>
+            </fieldset>
+            ${showActualAwardedAmount ? `
             <div class="field">
               <label for="actual-awarded">${escapeHtml(translate("form.actualAwardedAmount"))}</label>
               <input id="actual-awarded" class="amount-input mono" type="text" inputmode="decimal" pattern="${AmountInputPatternAttribute}" dir="ltr" value="${escapeHtml(state.form.actualAwardedAmount)}" data-form-field="actualAwardedAmount" data-testid="actual-awarded-input" autocomplete="off" ${validationFields.has("actualAwardedAmount") ? "aria-invalid=\"true\"" : ""} />
             </div>
+            ` : ""}
           </div>
         </article>
 
@@ -2701,6 +3256,457 @@ function renderLeadForm(draftMetrics) {
   `;
 }
 
+function renderSalesMonthlyReportModal() {
+  const report = state.reportData;
+  const owners = report?.availableSalesPeople || [];
+  const isAdmin = isAdminUser();
+  const signedInOwner = state.shellContext?.user || null;
+
+  return `
+    <section class="lead-modal-overlay">
+      <div class="lead-modal report-modal" data-modal-root role="dialog" aria-modal="true" aria-labelledby="sales-report-title" data-testid="sales-report-modal">
+        <div class="lead-modal-shell report-modal-shell">
+          <header class="lead-modal-header">
+            <div class="lead-modal-header-copy">
+              <h2 id="sales-report-title" class="lead-modal-title">${escapeHtml(translate("view.salesMonthlyReport"))}</h2>
+              <p class="lead-modal-subtitle">${escapeHtml(translate("report.subtitle"))}</p>
+            </div>
+            <button type="button" class="icon-button" data-action="close-sales-report" data-testid="close-sales-report-modal" aria-label="${escapeHtml(translate("common.close"))}" title="${escapeHtml(translate("common.close"))}">X</button>
+          </header>
+          <div class="lead-modal-body report-modal-body" data-modal-body>
+            <form class="report-filter-form panel" data-report-filters-form>
+              <div class="report-filter-grid">
+                <div class="field">
+                  <label for="report-from-date">${escapeHtml(translate("report.fromDate"))}</label>
+                  <input id="report-from-date" type="date" value="${escapeHtml(state.reportFilters.fromDate)}" data-report-field="fromDate" data-testid="report-from-date" />
+                </div>
+                <div class="field">
+                  <label for="report-to-date">${escapeHtml(translate("report.toDate"))}</label>
+                  <input id="report-to-date" type="date" value="${escapeHtml(state.reportFilters.toDate)}" data-report-field="toDate" data-testid="report-to-date" />
+                </div>
+                ${isAdmin
+                  ? `
+                    <div class="field">
+                      <label for="report-salesperson">${escapeHtml(translate("report.salesperson"))}</label>
+                      <select id="report-salesperson" data-report-field="ownerSubjectId" data-testid="report-salesperson">
+                        <option value="">${escapeHtml(translate("report.allSalespeople"))}</option>
+                        ${owners.map((owner) => `
+                          <option value="${escapeHtml(owner.subjectId)}" ${state.reportFilters.ownerSubjectId === owner.subjectId ? "selected" : ""}>${escapeHtml(owner.displayName)}</option>
+                        `).join("")}
+                      </select>
+                    </div>
+                  `
+                  : `
+                    <div class="field">
+                      <label>${escapeHtml(translate("report.salesperson"))}</label>
+                      <div class="report-locked-owner">${escapeHtml(signedInOwner?.displayName || "")}</div>
+                      <p class="helper-text">${escapeHtml(translate("report.lockedToCurrentUser"))}</p>
+                    </div>
+                  `}
+              </div>
+              <div class="report-filter-footer">
+                ${renderInlineReportStats(report)}
+                <div class="report-filter-actions">
+                  <button type="submit" class="primary-button" data-testid="run-sales-report" ${state.reportLoading ? "disabled" : ""}>${escapeHtml(state.reportLoading ? translate("report.loading") : translate("report.run"))}</button>
+                  <button type="button" class="ghost-button" data-action="export-sales-report" data-testid="export-sales-report" ${state.reportExporting ? "disabled" : ""}>${escapeHtml(state.reportExporting ? translate("common.exporting") : translate("report.export"))}</button>
+                </div>
+              </div>
+            </form>
+            ${renderSalesMonthlyReportContent(report)}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderSalesMonthlyReportContent(report) {
+  if (state.reportLoading && !report) {
+    return `<article class="table-card report-state-card"><p class="empty-state">${escapeHtml(translate("report.loading"))}</p></article>`;
+  }
+
+  if (!report || !report.rows?.length) {
+    return `<article class="table-card report-state-card"><p class="empty-state">${escapeHtml(translate("report.noData"))}</p></article>`;
+  }
+
+  const rows = getSortedSalesReportRows(report.rows);
+  const displayMonths = getDisplayReportMonths(report.months);
+
+  return `
+    <section class="report-content-grid">
+      <section class="report-visual-grid">
+        ${renderStatisticsPieCard(rows)}
+        ${renderStatisticsTrendCard(report)}
+      </section>
+      <section class="table-card report-table-card" ${state.reportLoading ? "aria-busy=\"true\"" : ""}>
+        <div class="report-table-grid">
+          <div class="report-scroll-pane">
+            <div class="table-scroll" data-report-table-scroll>
+              <table class="monthly-report-table" data-testid="sales-report-table">
+                ${renderReportScrollableColumnGroup(displayMonths)}
+                <thead>
+                  <tr>
+                    ${displayMonths.map((month) => renderSortableMonthHeader(month)).join("")}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows.map((row) => renderSalesMonthlyReportScrollableRows(row, displayMonths)).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="report-frozen-pane">
+            <div class="report-frozen-scroll" data-report-frozen-scroll>
+              <table class="monthly-report-table monthly-report-frozen-table" aria-hidden="true">
+                ${renderReportFrozenColumnGroup()}
+                <thead>
+                  <tr>
+                    <th class="monthly-report-total-header">${escapeHtml(translate("report.total"))}</th>
+                    <th class="monthly-report-person-header">${escapeHtml(translate("report.salesperson"))}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows.map((row) => renderSalesMonthlyReportFrozenRows(row)).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="report-summary-footer">
+          <div class="report-summary-grid">
+            <div class="report-summary-scroll" data-report-summary-scroll>
+              <table class="monthly-report-table monthly-report-summary-table" aria-hidden="true">
+                ${renderReportScrollableColumnGroup(displayMonths)}
+                <tbody>
+                  ${renderSalesMonthlyReportScrollableSummaryRows(report.totals, displayMonths)}
+                </tbody>
+              </table>
+            </div>
+            <div class="report-summary-frozen-pane">
+              <table class="monthly-report-table monthly-report-frozen-table monthly-report-summary-table" aria-hidden="true">
+                ${renderReportFrozenColumnGroup()}
+                <tbody>
+                  ${renderSalesMonthlyReportFrozenSummaryRows(report.totals)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  `;
+}
+
+function getDisplayReportMonths(months) {
+  return [...(months || [])].reverse();
+}
+
+function renderReportScrollableColumnGroup(displayMonths) {
+  return `
+    <colgroup>
+      ${displayMonths.map(() => '<col class="monthly-report-col monthly-report-col-month" />').join("")}
+    </colgroup>
+  `;
+}
+
+function renderReportFrozenColumnGroup() {
+  return `
+    <colgroup>
+      <col class="monthly-report-col monthly-report-col-total" />
+      <col class="monthly-report-col monthly-report-col-person" />
+    </colgroup>
+  `;
+}
+
+function renderInlineReportStats(report) {
+  if (!report || !report.rows?.length) {
+    return "";
+  }
+
+  return `
+    <section class="report-stat-strip" aria-label="${escapeHtml(translate("view.salesMonthlyReport"))}">
+      ${renderInlineReportStat(
+        translate("report.summary.salespeople"),
+        formatNumber(report.rows.length),
+        `${formatNumber(report.months.length)} ${translate("report.summary.months")}`
+      )}
+      ${renderInlineReportStat(
+        translate("report.summary.actual"),
+        formatCompactAmount(report.totals.actualTotal),
+        formatAmount(report.totals.actualTotal)
+      )}
+      ${renderInlineReportStat(
+        translate("report.summary.projected"),
+        formatCompactAmount(report.totals.projectedTotal),
+        formatAmount(report.totals.projectedTotal)
+      )}
+    </section>
+  `;
+}
+
+function renderInlineReportStat(label, value, detail) {
+  return `
+    <article class="report-stat-inline">
+      <div class="report-stat-inline-label">${escapeHtml(label)}</div>
+      <div class="report-stat-inline-value">${escapeHtml(value)}</div>
+      <div class="report-stat-inline-detail">${escapeHtml(detail)}</div>
+    </article>
+  `;
+}
+
+function renderSortableMonthHeader(month) {
+  const monthKey = String(month.monthStart || "");
+  const isActive = state.reportSort.key === monthKey;
+  const direction = isActive ? state.reportSort.direction : "";
+  const icon = direction === "asc" ? "↑" : direction === "desc" ? "↓" : "↕";
+  const title = direction === "asc"
+    ? translate("report.sort.asc")
+    : direction === "desc"
+      ? translate("report.sort.desc")
+      : `${translate("report.sort.desc")} / ${translate("report.sort.asc")}`;
+
+  return `
+    <th>
+      <button
+        type="button"
+        class="column-sort-button ${isActive ? "active" : ""}"
+        data-action="sort-statistics-report"
+        data-sort-key="${escapeHtml(monthKey)}"
+        title="${escapeHtml(title)}">
+        <span>${escapeHtml(formatReportMonth(month.monthStart))}</span>
+        <span aria-hidden="true">${icon}</span>
+      </button>
+    </th>
+  `;
+}
+
+function getSortedSalesReportRows(rows) {
+  const items = [...(rows || [])];
+  if (!state.reportSort.key) {
+    return items.sort((left, right) => left.salesPerson.displayName.localeCompare(right.salesPerson.displayName));
+  }
+
+  const direction = state.reportSort.direction === "asc" ? 1 : -1;
+  return items.sort((left, right) => {
+    const difference = getReportMonthSortValue(left, state.reportSort.key) - getReportMonthSortValue(right, state.reportSort.key);
+    if (difference !== 0) {
+      return difference * direction;
+    }
+
+    return left.salesPerson.displayName.localeCompare(right.salesPerson.displayName);
+  });
+}
+
+function getReportMonthSortValue(row, monthKey) {
+  const month = (row.months || []).find((item) => String(item.monthStart) === String(monthKey));
+  if (!month) {
+    return 0;
+  }
+
+  return Number(month.projectedAmount || 0) + Number(month.actualAmount || 0);
+}
+
+function renderStatisticsPieCard(rows) {
+  const segments = buildStatisticsPieSegments(rows);
+  if (!segments.length) {
+    return `
+      <article class="table-card report-chart-card">
+        <div class="card-heading">
+          <div>
+            <h3>${escapeHtml(translate("report.chart.salespeople"))}</h3>
+          </div>
+        </div>
+        <p class="empty-state">${escapeHtml(translate("report.noData"))}</p>
+      </article>
+    `;
+  }
+
+  const gradient = segments.map((segment) =>
+    `${segment.color} ${segment.start.toFixed(2)}% ${segment.end.toFixed(2)}%`
+  ).join(", ");
+
+  return `
+    <article class="table-card report-chart-card">
+      <div class="card-heading">
+        <div>
+          <h3>${escapeHtml(translate("report.chart.salespeople"))}</h3>
+          <p>${escapeHtml(translate("report.summary.projected"))}</p>
+        </div>
+      </div>
+      <div class="report-pie-layout">
+        <div class="report-pie-chart" style="background: conic-gradient(${gradient});"></div>
+        <div class="report-pie-legend">
+          ${segments.map((segment) => `
+            <div class="report-pie-legend-item">
+              <span class="report-pie-swatch" style="background:${segment.color};"></span>
+              <span class="report-pie-name">${escapeHtml(segment.label)}</span>
+              <span class="report-pie-value">${escapeHtml(formatAmount(segment.value))}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function buildStatisticsPieSegments(rows) {
+  const baseItems = rows
+    .map((row, index) => ({
+      label: row.salesPerson.displayName,
+      value: Number(row.projectedTotal || 0),
+      color: DashboardFallbackPalette[index % DashboardFallbackPalette.length]
+    }))
+    .filter((item) => item.value > 0);
+
+  const total = baseItems.reduce((sum, item) => sum + item.value, 0);
+  if (!total) {
+    return [];
+  }
+
+  let start = 0;
+  return baseItems.map((item) => {
+    const percent = (item.value / total) * 100;
+    const segment = {
+      ...item,
+      start,
+      end: start + percent
+    };
+    start += percent;
+    return segment;
+  });
+}
+
+function renderStatisticsTrendCard(report) {
+  return `
+    <article class="table-card report-chart-card">
+      <div class="card-heading">
+        <div>
+          <h3>${escapeHtml(translate("report.chart.months"))}</h3>
+          <p>${escapeHtml(translate("report.chart.projected"))} / ${escapeHtml(translate("report.chart.actual"))}</p>
+        </div>
+      </div>
+      ${renderStatisticsTrendSvg(report)}
+      <div class="report-chart-legend">
+        <span class="report-chart-legend-item">
+          <span class="report-chart-legend-bar"></span>
+          ${escapeHtml(translate("report.projected"))}
+        </span>
+        <span class="report-chart-legend-item">
+          <span class="report-chart-legend-line"></span>
+          ${escapeHtml(translate("report.actual"))}
+        </span>
+      </div>
+    </article>
+  `;
+}
+
+function renderStatisticsTrendSvg(report) {
+  const months = report.totals.months || [];
+  const width = 720;
+  const height = 180;
+  const padding = { top: 10, right: 16, bottom: 34, left: 16 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const maxValue = Math.max(1, ...months.flatMap((month) => [Number(month.projectedAmount || 0), Number(month.actualAmount || 0)]));
+  const step = months.length ? plotWidth / months.length : plotWidth;
+  const barWidth = Math.max(14, Math.min(28, step * 0.48));
+
+  const actualPoints = months.map((month, index) => {
+    const x = padding.left + (step * index) + (step / 2);
+    const y = padding.top + plotHeight - ((Number(month.actualAmount || 0) / maxValue) * plotHeight);
+    return `${x},${y}`;
+  }).join(" ");
+
+  return `
+    <svg class="report-trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(translate("report.chart.months"))}">
+      <line x1="${padding.left}" y1="${padding.top + plotHeight}" x2="${width - padding.right}" y2="${padding.top + plotHeight}" stroke="rgba(19, 48, 66, 0.16)" stroke-width="1" />
+      ${months.map((month, index) => {
+        const barHeight = (Number(month.projectedAmount || 0) / maxValue) * plotHeight;
+        const x = padding.left + (step * index) + ((step - barWidth) / 2);
+        const y = padding.top + plotHeight - barHeight;
+        const pointX = padding.left + (step * index) + (step / 2);
+        const pointY = padding.top + plotHeight - ((Number(month.actualAmount || 0) / maxValue) * plotHeight);
+
+        return `
+          <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="8" fill="#274884" fill-opacity="0.82"></rect>
+          <circle cx="${pointX}" cy="${pointY}" r="3.5" fill="#b4423f"></circle>
+          <text x="${pointX}" y="${height - 12}" text-anchor="middle" class="report-trend-label">${escapeHtml(formatChartMonthLabel(month.monthStart))}</text>
+        `;
+      }).join("")}
+      ${actualPoints ? `<polyline points="${actualPoints}" fill="none" stroke="#b4423f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>` : ""}
+    </svg>
+  `;
+}
+
+function formatChartMonthLabel(value) {
+  const date = parseDateOnly(value);
+  if (!date) {
+    return String(value || "");
+  }
+
+  return new Intl.DateTimeFormat(currentLocale(), {
+    month: "short"
+  }).format(date);
+}
+
+function renderSalesMonthlyReportScrollableRows(row, displayMonths) {
+  return `
+    <tr class="monthly-report-projected-row">
+      ${displayMonths.map((month) => {
+        const currentMonth = row.months.find((item) => item.monthStart === month.monthStart) || { projectedAmount: 0 };
+        return `<td class="monthly-report-value-cell">${formatAmount(currentMonth.projectedAmount)}</td>`;
+      }).join("")}
+    </tr>
+    <tr class="monthly-report-actual-row">
+      ${displayMonths.map((month) => {
+        const currentMonth = row.months.find((item) => item.monthStart === month.monthStart) || { actualAmount: 0 };
+        return `<td class="monthly-report-value-cell">${formatAmount(currentMonth.actualAmount)}</td>`;
+      }).join("")}
+    </tr>
+  `;
+}
+
+function renderSalesMonthlyReportFrozenRows(row) {
+  return `
+    <tr class="monthly-report-projected-row">
+      <td class="monthly-report-total-cell">${formatAmount(row.projectedTotal)}</td>
+      <th rowspan="2" class="monthly-report-person-cell">${escapeHtml(row.salesPerson.displayName)}</th>
+    </tr>
+    <tr class="monthly-report-actual-row">
+      <td class="monthly-report-total-cell">${formatAmount(row.actualTotal)}</td>
+    </tr>
+  `;
+}
+
+function renderSalesMonthlyReportScrollableSummaryRows(totals, displayMonths) {
+  return `
+    <tr class="monthly-report-projected-row monthly-report-summary-row">
+      ${displayMonths.map((month) => {
+        const currentMonth = totals.months.find((item) => item.monthStart === month.monthStart) || { projectedAmount: 0 };
+        return `<td class="monthly-report-value-cell">${formatAmount(currentMonth.projectedAmount)}</td>`;
+      }).join("")}
+    </tr>
+    <tr class="monthly-report-actual-row monthly-report-summary-row">
+      ${displayMonths.map((month) => {
+        const currentMonth = totals.months.find((item) => item.monthStart === month.monthStart) || { actualAmount: 0 };
+        return `<td class="monthly-report-value-cell">${formatAmount(currentMonth.actualAmount)}</td>`;
+      }).join("")}
+    </tr>
+  `;
+}
+
+function renderSalesMonthlyReportFrozenSummaryRows(totals) {
+  return `
+    <tr class="monthly-report-projected-row monthly-report-summary-row">
+      <td class="monthly-report-total-cell">${formatAmount(totals.projectedTotal)}</td>
+      <th rowspan="2" class="monthly-report-person-cell">${escapeHtml(translate("report.total"))}</th>
+    </tr>
+    <tr class="monthly-report-actual-row monthly-report-summary-row">
+      <td class="monthly-report-total-cell">${formatAmount(totals.actualTotal)}</td>
+    </tr>
+  `;
+}
+
 function renderSummaryRow(label, value) {
   return `
     <div class="summary-row">
@@ -2767,23 +3773,27 @@ function formatPercent(value) {
 }
 
 function formatDate(value) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString(currentLocale());
+  return getQuarterLabel(value);
 }
 
 function formatDateTime(value) {
   return new Date(value).toLocaleString(currentLocale());
 }
 
-function formatMonth(value) {
-  if (!value) {
-    return translate("common.noDueDate");
+function formatReportMonth(value) {
+  const date = parseDateOnly(value);
+  if (!date) {
+    return String(value || "");
   }
 
-  const [year, month] = value.split("-");
-  return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(currentLocale(), {
+  return new Intl.DateTimeFormat(currentLocale(), {
     month: "short",
     year: "numeric"
-  });
+  }).format(date);
+}
+
+function formatMonth(value) {
+  return getQuarterLabel(value);
 }
 
 function escapeHtml(value) {

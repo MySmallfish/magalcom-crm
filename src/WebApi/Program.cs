@@ -115,6 +115,7 @@ var provider = builder.Configuration.GetValue<string>("DataAccess:Provider") ?? 
 if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
     builder.Services.AddScoped<ILeadDataService, SqlServerLeadDataService>();
+    builder.Services.AddScoped<IStatisticsReportDataService, SqlServerStatisticsReportDataService>();
     builder.Services.AddScoped<IProjectDataService, SqlServerProjectDataService>();
     builder.Services.AddScoped<IFormulaDataService, SqlServerFormulaDataService>();
     builder.Services.AddScoped<ISqlQueryService, SqlServerSqlQueryService>();
@@ -122,6 +123,7 @@ if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 else
 {
     builder.Services.AddSingleton<ILeadDataService, InMemoryLeadDataService>();
+    builder.Services.AddSingleton<IStatisticsReportDataService, InMemoryStatisticsReportDataService>();
     builder.Services.AddSingleton<IProjectDataService, InMemoryProjectDataService>();
     builder.Services.AddSingleton<IFormulaDataService, InMemoryFormulaDataService>();
     builder.Services.AddSingleton<ISqlQueryService, InMemorySqlQueryService>();
@@ -235,12 +237,12 @@ api.MapGet("/miniapps", (IOptions<MiniAppsOptions> options, ClaimsPrincipal user
 api.MapGet("/leads/metadata", async (ILeadDataService service, CancellationToken cancellationToken) =>
     Results.Ok(await service.GetMetadataAsync(cancellationToken)));
 
-api.MapGet("/leads", async (ILeadDataService service, CancellationToken cancellationToken) =>
-    Results.Ok(await service.GetLeadsAsync(cancellationToken)));
+api.MapGet("/leads", async (ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+    Results.Ok(await service.GetLeadsAsync(ResolveLeadQueryScope(user), cancellationToken)));
 
-api.MapGet("/leads/export", async ([AsParameters] LeadExportQuery query, ILeadDataService service, CancellationToken cancellationToken) =>
+api.MapGet("/leads/export", async ([AsParameters] LeadExportQuery query, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
 {
-    var leads = LeadExportWorkbookBuilder.ApplyQuery(await service.GetLeadsAsync(cancellationToken), query);
+    var leads = LeadExportWorkbookBuilder.ApplyQuery(await service.GetLeadsAsync(ResolveLeadQueryScope(user), cancellationToken), query);
     var workbookBytes = LeadExportWorkbookBuilder.BuildWorkbook(leads, query);
     return Results.File(
         workbookBytes,
@@ -248,9 +250,47 @@ api.MapGet("/leads/export", async ([AsParameters] LeadExportQuery query, ILeadDa
         LeadExportWorkbookBuilder.BuildFileName(query));
 });
 
-api.MapGet("/leads/{id:guid}", async (Guid id, ILeadDataService service, CancellationToken cancellationToken) =>
+api.MapGet("/statistics-report", async ([AsParameters] SalesMonthlyReportQuery query, ClaimsPrincipal user, IStatisticsReportDataService service, CancellationToken cancellationToken) =>
 {
-    var lead = await service.GetLeadByIdAsync(id, cancellationToken);
+    if (!query.FromDate.HasValue || !query.ToDate.HasValue)
+    {
+        return Results.BadRequest(new { error = "fromDate and toDate are required." });
+    }
+
+    if (query.FromDate.Value > query.ToDate.Value)
+    {
+        return Results.BadRequest(new { error = "fromDate must be earlier than or equal to toDate." });
+    }
+
+    var entries = await service.GetEntriesAsync(ResolveLeadQueryScope(user), cancellationToken);
+    var report = SalesMonthlyReportBuilder.Build(entries, query);
+    return Results.Ok(report);
+});
+
+api.MapGet("/statistics-report/export", async ([AsParameters] SalesMonthlyReportQuery query, ClaimsPrincipal user, IStatisticsReportDataService service, CancellationToken cancellationToken) =>
+{
+    if (!query.FromDate.HasValue || !query.ToDate.HasValue)
+    {
+        return Results.BadRequest(new { error = "fromDate and toDate are required." });
+    }
+
+    if (query.FromDate.Value > query.ToDate.Value)
+    {
+        return Results.BadRequest(new { error = "fromDate must be earlier than or equal to toDate." });
+    }
+
+    var entries = await service.GetEntriesAsync(ResolveLeadQueryScope(user), cancellationToken);
+    var report = SalesMonthlyReportBuilder.Build(entries, query);
+    var workbookBytes = SalesMonthlyReportWorkbookBuilder.BuildWorkbook(report, query);
+    return Results.File(
+        workbookBytes,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        SalesMonthlyReportWorkbookBuilder.BuildFileName(query));
+});
+
+api.MapGet("/leads/{id:guid}", async (Guid id, ClaimsPrincipal user, ILeadDataService service, CancellationToken cancellationToken) =>
+{
+    var lead = await service.GetLeadByIdAsync(id, ResolveLeadQueryScope(user), cancellationToken);
     return lead is null ? Results.NotFound() : Results.Ok(lead);
 });
 
@@ -271,6 +311,13 @@ api.MapPut("/leads/{id:guid}", async (Guid id, UpdateLeadRequest request, Claims
 {
     try
     {
+        var scope = ResolveLeadQueryScope(user);
+        var existing = await service.GetLeadByIdAsync(id, scope, cancellationToken);
+        if (existing is null)
+        {
+            return Results.NotFound();
+        }
+
         var updated = await service.SaveLeadAsync(id, request, ResolveLeadActor(user), cancellationToken);
         return updated is null ? Results.NotFound() : Results.Ok(updated);
     }
@@ -372,6 +419,18 @@ static LeadOwnerDto ResolveLeadActor(ClaimsPrincipal user)
                 ?? "unknown@magalcom.local";
 
     return new LeadOwnerDto(subjectId, displayName, email);
+}
+
+static LeadQueryScope ResolveLeadQueryScope(ClaimsPrincipal user)
+{
+    var subjectId = user.FindFirstValue("oid")
+                    ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    var canViewAll = user.Claims.Any(claim =>
+        (claim.Type is "roles" or ClaimTypes.Role)
+        && string.Equals(claim.Value, "Admin", StringComparison.OrdinalIgnoreCase));
+
+    return LeadQueryScope.ForUser(subjectId, canViewAll);
 }
 
 app.Run();

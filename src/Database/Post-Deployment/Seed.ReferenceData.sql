@@ -131,7 +131,11 @@ USING
             N'Initial seeded opportunity from CRM shell scaffold.',
             CAST(1 AS SMALLINT),
             CAST(0 AS BIT),
-            CAST(DATEADD(DAY, 30, CAST(SYSUTCDATETIME() AS DATE)) AS DATE),
+            DATEFROMPARTS(
+                YEAR(DATEADD(QUARTER, 1, SYSUTCDATETIME())),
+                ((DATEPART(QUARTER, DATEADD(QUARTER, 1, SYSUTCDATETIME())) - 1) * 3) + 1,
+                1
+            ),
             CAST(0 AS SMALLINT),
             CAST(NULL AS DECIMAL(18, 2))
         )
@@ -240,3 +244,57 @@ VALUES
         N'Seeded',
         N'Lead seeded for development'
     );
+
+DELETE FROM [crm].[StatisticsReportEntry];
+
+WITH [Months] AS
+(
+    SELECT *
+    FROM
+    (
+        VALUES
+            (DATEFROMPARTS(2026, 1, 1), 1),
+            (DATEFROMPARTS(2026, 2, 1), 2),
+            (DATEFROMPARTS(2026, 3, 1), 3),
+            (DATEFROMPARTS(2026, 4, 1), 4),
+            (DATEFROMPARTS(2026, 5, 1), 5),
+            (DATEFROMPARTS(2026, 6, 1), 6),
+            (DATEFROMPARTS(2026, 7, 1), 7),
+            (DATEFROMPARTS(2026, 8, 1), 8),
+            (DATEFROMPARTS(2026, 9, 1), 9),
+            (DATEFROMPARTS(2026, 10, 1), 10),
+            (DATEFROMPARTS(2026, 11, 1), 11),
+            (DATEFROMPARTS(2026, 12, 1), 12)
+    ) AS [Value] ([EntryDate], [MonthIndex])
+),
+[SalesPeople] AS
+(
+    SELECT *
+    FROM
+    (
+        VALUES
+            (N'dev-user-001', N'Development User', N'developer@magalcom.local', 18000.00, 15200.00, 2),
+            (N'sales-user-002', N'Alice Cohen', N'alice.cohen@magalcom.local', 14000.00, 11800.00, 3),
+            (N'sales-user-003', N'Moshe Levi', N'moshe.levi@magalcom.local', 11000.00, 9100.00, 4)
+    ) AS [Value] ([SalesPersonSubjectId], [SalesPersonDisplayName], [SalesPersonEmail], [ProjectedBase], [ActualBase], [GrowthFactor])
+)
+INSERT INTO [crm].[StatisticsReportEntry]
+(
+    [Id],
+    [SalesPersonSubjectId],
+    [SalesPersonDisplayName],
+    [SalesPersonEmail],
+    [EntryDate],
+    [ProjectedAmount],
+    [ActualAmount]
+)
+SELECT
+    NEWID(),
+    [SalesPeople].[SalesPersonSubjectId],
+    [SalesPeople].[SalesPersonDisplayName],
+    [SalesPeople].[SalesPersonEmail],
+    [Months].[EntryDate],
+    CAST([SalesPeople].[ProjectedBase] + ([Months].[MonthIndex] * [SalesPeople].[GrowthFactor] * 850.00) AS DECIMAL(18, 2)),
+    CAST([SalesPeople].[ActualBase] + ([Months].[MonthIndex] * ([SalesPeople].[GrowthFactor] - 1) * 710.00) AS DECIMAL(18, 2))
+FROM [Months]
+CROSS JOIN [SalesPeople];

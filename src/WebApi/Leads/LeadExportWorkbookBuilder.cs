@@ -55,7 +55,7 @@ internal static class LeadExportWorkbookBuilder
                 return false;
             }
 
-            if (query.OfferStatus.HasValue && lead.OfferStatus != query.OfferStatus.Value)
+            if (query.OfferStatus.HasValue && GetEffectiveOfferStatus(lead) != query.OfferStatus.Value)
             {
                 return false;
             }
@@ -208,13 +208,14 @@ internal static class LeadExportWorkbookBuilder
             sheet.Cell(excelRow, 1).Value = lead.Owner.DisplayName;
             sheet.Cell(excelRow, 2).Value = lead.Customer.Name;
             sheet.Cell(excelRow, 3).Value = lead.Project.Name;
-            sheet.Cell(excelRow, 4).Value = TranslateOfferStatus(locale, lead.OfferStatus);
+            sheet.Cell(excelRow, 4).Value = GetEffectiveOfferStatus(lead).HasValue
+                ? TranslateOfferStatus(locale, lead.OfferStatus)
+                : Translate(locale, "common.notSet");
             sheet.Cell(excelRow, 5).Value = lead.Stage.HasValue ? TranslateStage(locale, lead.Stage.Value) : Translate(locale, "common.notSet");
             sheet.Cell(excelRow, 6).Value = TranslateContractType(locale, lead.IsPerpetual);
-            if (lead.DueDate.HasValue)
-            {
-                sheet.Cell(excelRow, 7).Value = lead.DueDate.Value.ToDateTime(TimeOnly.MinValue);
-            }
+            sheet.Cell(excelRow, 7).Value = lead.DueDate.HasValue
+                ? FormatQuarter(locale, lead.DueDate.Value)
+                : Translate(locale, "common.notSet");
 
             sheet.Cell(excelRow, 8).Value = lead.Metrics.TotalAmount;
             sheet.Cell(excelRow, 9).Value = lead.Metrics.ForecastAmount;
@@ -264,7 +265,6 @@ internal static class LeadExportWorkbookBuilder
     {
         if (rowCount > 0)
         {
-            sheet.Range(2, 7, rowCount + 1, 7).Style.DateFormat.Format = "yyyy-mm-dd";
             sheet.Range(2, 8, rowCount + 1, 12).Style.NumberFormat.Format = "#,##0.00";
             sheet.Range(2, 13, rowCount + 1, 14).Style.NumberFormat.Format = "0.00%";
             sheet.Range(2, 16, rowCount + 1, 16).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
@@ -302,11 +302,11 @@ internal static class LeadExportWorkbookBuilder
             leadArray.Sum(lead => lead.Metrics.ForecastAmount),
             leadArray.Sum(lead => lead.Metrics.HighConfidenceForecastAmount),
             leadArray.Sum(lead => lead.Metrics.WonAmount),
-            leadArray.Count(lead => lead.OfferStatus == LeadOfferStatus.Open),
-            leadArray.Count(lead => lead.OfferStatus == LeadOfferStatus.Win),
-            leadArray.Count(lead => lead.OfferStatus == LeadOfferStatus.Lose),
-            leadArray.Count(lead => lead.OfferStatus == LeadOfferStatus.Suspended),
-            leadArray.Count(lead => lead.OfferStatus == LeadOfferStatus.Cancelled),
+            leadArray.Count(lead => GetEffectiveOfferStatus(lead) == LeadOfferStatus.Open),
+            leadArray.Count(lead => GetEffectiveOfferStatus(lead) == LeadOfferStatus.Win),
+            leadArray.Count(lead => GetEffectiveOfferStatus(lead) == LeadOfferStatus.Lose),
+            leadArray.Count(lead => GetEffectiveOfferStatus(lead) == LeadOfferStatus.Suspended),
+            leadArray.Count(lead => GetEffectiveOfferStatus(lead) == LeadOfferStatus.Cancelled),
             leadArray.Count(lead => lead.IsIncomplete));
     }
 
@@ -379,12 +379,12 @@ internal static class LeadExportWorkbookBuilder
 
         if (query.DueDateFrom.HasValue)
         {
-            parts.Add($"{Translate(locale, "filter.dueFrom")}: {query.DueDateFrom:yyyy-MM-dd}");
+            parts.Add($"{Translate(locale, "filter.dueFrom")}: {FormatQuarter(locale, query.DueDateFrom.Value)}");
         }
 
         if (query.DueDateTo.HasValue)
         {
-            parts.Add($"{Translate(locale, "filter.dueTo")}: {query.DueDateTo:yyyy-MM-dd}");
+            parts.Add($"{Translate(locale, "filter.dueTo")}: {FormatQuarter(locale, query.DueDateTo.Value)}");
         }
 
         if (query.AmountMin.HasValue)
@@ -434,10 +434,10 @@ internal static class LeadExportWorkbookBuilder
             (LocaleHebrew, "details.salesman") => "איש מכירות",
             (LocaleHebrew, "details.customer") => "לקוח",
             (LocaleHebrew, "details.project") => "פרויקט",
-            (LocaleHebrew, "details.offerStatus") => "סטטוס הצעה",
-            (LocaleHebrew, "details.stage") => "שלב",
+            (LocaleHebrew, "details.offerStatus") => "סטטוס מכרז",
+            (LocaleHebrew, "details.stage") => "סוג ליד",
             (LocaleHebrew, "details.contractType") => "סוג חוזה",
-            (LocaleHebrew, "details.dueDate") => "תאריך יעד",
+            (LocaleHebrew, "details.dueDate") => "רבעון יעד",
             (LocaleHebrew, "details.total") => "סכום כולל",
             (LocaleHebrew, "details.forecast") => "סכום תחזית",
             (LocaleHebrew, "details.highConfidence") => "תחזית בביטחון גבוה",
@@ -452,10 +452,10 @@ internal static class LeadExportWorkbookBuilder
             (LocaleHebrew, "filter.customer") => "לקוח",
             (LocaleHebrew, "filter.workType") => "סוג עבודה",
             (LocaleHebrew, "filter.contractType") => "סוג חוזה",
-            (LocaleHebrew, "filter.stage") => "שלב",
-            (LocaleHebrew, "filter.offerStatus") => "סטטוס הצעה",
-            (LocaleHebrew, "filter.dueFrom") => "תאריך יעד מ-",
-            (LocaleHebrew, "filter.dueTo") => "תאריך יעד עד",
+            (LocaleHebrew, "filter.stage") => "סוג ליד",
+            (LocaleHebrew, "filter.offerStatus") => "סטטוס מכרז",
+            (LocaleHebrew, "filter.dueFrom") => "רבעון יעד מ-",
+            (LocaleHebrew, "filter.dueTo") => "רבעון יעד עד",
             (LocaleHebrew, "filter.amountMin") => "סכום מינימלי",
             (LocaleHebrew, "filter.amountMax") => "סכום מקסימלי",
             (LocaleHebrew, "common.notSet") => "לא הוגדר",
@@ -480,10 +480,10 @@ internal static class LeadExportWorkbookBuilder
             ("en", "details.salesman") => "Salesman",
             ("en", "details.customer") => "Customer",
             ("en", "details.project") => "Project",
-            ("en", "details.offerStatus") => "Offer Status",
-            ("en", "details.stage") => "Stage",
+            ("en", "details.offerStatus") => "Auction Status",
+            ("en", "details.stage") => "Lead Type",
             ("en", "details.contractType") => "Contract Type",
-            ("en", "details.dueDate") => "Due Date",
+            ("en", "details.dueDate") => "Due Quarter",
             ("en", "details.total") => "Total Amount",
             ("en", "details.forecast") => "Forecast Amount",
             ("en", "details.highConfidence") => "High Confidence Forecast",
@@ -498,10 +498,10 @@ internal static class LeadExportWorkbookBuilder
             ("en", "filter.customer") => "Customer",
             ("en", "filter.workType") => "Work Type",
             ("en", "filter.contractType") => "Contract Type",
-            ("en", "filter.stage") => "Stage",
-            ("en", "filter.offerStatus") => "Offer Status",
-            ("en", "filter.dueFrom") => "Due From",
-            ("en", "filter.dueTo") => "Due To",
+            ("en", "filter.stage") => "Lead Type",
+            ("en", "filter.offerStatus") => "Auction Status",
+            ("en", "filter.dueFrom") => "Due Quarter From",
+            ("en", "filter.dueTo") => "Due Quarter To",
             ("en", "filter.amountMin") => "Amount Min",
             ("en", "filter.amountMax") => "Amount Max",
             ("en", "common.notSet") => "Not set",
@@ -512,10 +512,12 @@ internal static class LeadExportWorkbookBuilder
         (locale, stage) switch
         {
             (LocaleHebrew, LeadStage.Before) => "לפני",
-            (LocaleHebrew, LeadStage.Approaching) => "מתקרב",
+            (LocaleHebrew, LeadStage.AuctionKnown) => "מכרז ידוע",
+            (LocaleHebrew, LeadStage.AuctionActive) => "מכרז פעיל",
             (LocaleHebrew, LeadStage.Sent) => "נשלח",
             ("en", LeadStage.Before) => "Before",
-            ("en", LeadStage.Approaching) => "Approaching",
+            ("en", LeadStage.AuctionKnown) => "Auction is Known",
+            ("en", LeadStage.AuctionActive) => "Auction is Active",
             ("en", LeadStage.Sent) => "Sent",
             _ => stage.ToString()
         };
@@ -550,6 +552,17 @@ internal static class LeadExportWorkbookBuilder
             : string.Equals(contractType, ContractTypeAuction, StringComparison.OrdinalIgnoreCase)
                 ? (locale == LocaleHebrew ? "מכרז / חד-פעמי" : "Auction / One-time")
                 : contractType;
+
+    private static LeadOfferStatus? GetEffectiveOfferStatus(LeadDto lead) =>
+        lead.Stage == LeadStage.AuctionActive ? lead.OfferStatus : null;
+
+    private static string FormatQuarter(string locale, DateOnly dueDate)
+    {
+        var quarter = ((dueDate.Month - 1) / 3) + 1;
+        return locale == LocaleHebrew
+            ? $"רבעון {quarter} {dueDate.Year}"
+            : $"Q{quarter} {dueDate.Year}";
+    }
 
     private sealed record LeadExportSummaryRow(
         string Salesman,

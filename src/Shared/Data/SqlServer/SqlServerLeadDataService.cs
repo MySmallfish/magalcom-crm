@@ -28,16 +28,16 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
             _stageCoefficients);
     }
 
-    public async Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(LeadQueryScope? scope = null, CancellationToken cancellationToken = default)
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
-        return await GetLeadsAsync(connection, null, cancellationToken);
+        return await GetLeadsAsync(connection, null, scope ?? LeadQueryScope.All, cancellationToken);
     }
 
-    public async Task<LeadDto?> GetLeadByIdAsync(Guid leadId, CancellationToken cancellationToken = default)
+    public async Task<LeadDto?> GetLeadByIdAsync(Guid leadId, LeadQueryScope? scope = null, CancellationToken cancellationToken = default)
     {
         await using var connection = await OpenConnectionAsync(cancellationToken);
-        return await GetLeadByIdAsync(connection, leadId, cancellationToken);
+        return await GetLeadByIdAsync(connection, leadId, scope ?? LeadQueryScope.All, cancellationToken);
     }
 
     public async Task<LeadDto> AddLeadAsync(CreateLeadRequest request, LeadOwnerDto actor, CancellationToken cancellationToken = default)
@@ -80,7 +80,7 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
             throw new ArgumentException(error.Message, nameof(request), error);
         }
 
-        return (await GetLeadByIdAsync(connection, leadId, cancellationToken))!;
+        return (await GetLeadByIdAsync(connection, leadId, LeadQueryScope.All, cancellationToken))!;
     }
 
     public async Task<LeadDto?> SaveLeadAsync(Guid leadId, UpdateLeadRequest request, LeadOwnerDto actor, CancellationToken cancellationToken = default)
@@ -89,7 +89,7 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
         ArgumentNullException.ThrowIfNull(actor);
 
         await using var connection = await OpenConnectionAsync(cancellationToken);
-        var existing = await GetLeadByIdAsync(connection, leadId, cancellationToken);
+        var existing = await GetLeadByIdAsync(connection, leadId, LeadQueryScope.All, cancellationToken);
         if (existing is null)
         {
             return null;
@@ -133,7 +133,7 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
             throw new ArgumentException(error.Message, nameof(request), error);
         }
 
-        return await GetLeadByIdAsync(connection, leadId, cancellationToken);
+        return await GetLeadByIdAsync(connection, leadId, LeadQueryScope.All, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<WorkTypeDto>> GetWorkTypesAsync(CancellationToken cancellationToken = default)
@@ -475,7 +475,7 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
         return new ReferenceDataSnapshot(customers, projects, workTypes);
     }
 
-    private async Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(SqlConnection connection, Guid? leadId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyCollection<LeadDto>> GetLeadsAsync(SqlConnection connection, Guid? leadId, LeadQueryScope scope, CancellationToken cancellationToken)
     {
         const string sql = """
             SELECT
@@ -498,42 +498,51 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
                 [CreatedAtUtc],
                 [UpdatedAtUtc]
             FROM [crm].[LeadView]
-            WHERE @LeadId IS NULL OR [Id] = @LeadId
+            WHERE (@LeadId IS NULL OR [Id] = @LeadId)
+              AND (@CanViewAll = 1 OR [OwnerSubjectId] = @OwnerSubjectId)
             ORDER BY [UpdatedAtUtc] DESC, [CustomerName], [Id];
 
             SELECT
-                [Id],
-                [LeadId],
-                [WorkTypeId],
-                [WorkTypeCode],
-                [WorkTypeName],
-                [Amount],
-                [Note]
-            FROM [crm].[LeadAmountLineView]
-            WHERE @LeadId IS NULL OR [LeadId] = @LeadId
-            ORDER BY [LeadId], [WorkTypeName], [Id];
+                [Line].[Id],
+                [Line].[LeadId],
+                [Line].[WorkTypeId],
+                [Line].[WorkTypeCode],
+                [Line].[WorkTypeName],
+                [Line].[Amount],
+                [Line].[Note]
+            FROM [crm].[LeadAmountLineView] AS [Line]
+            INNER JOIN [crm].[Lead] AS [LeadFilter] ON [LeadFilter].[Id] = [Line].[LeadId]
+            WHERE (@LeadId IS NULL OR [Line].[LeadId] = @LeadId)
+              AND (@CanViewAll = 1 OR [LeadFilter].[OwnerSubjectId] = @OwnerSubjectId)
+            ORDER BY [Line].[LeadId], [Line].[WorkTypeName], [Line].[Id];
 
             SELECT
-                [LeadId],
-                [QuestionCode],
-                [Answer]
-            FROM [crm].[LeadQualificationAnswerView]
-            WHERE @LeadId IS NULL OR [LeadId] = @LeadId
-            ORDER BY [LeadId], [QuestionCode];
+                [Answer].[LeadId],
+                [Answer].[QuestionCode],
+                [Answer].[Answer]
+            FROM [crm].[LeadQualificationAnswerView] AS [Answer]
+            INNER JOIN [crm].[Lead] AS [LeadFilter] ON [LeadFilter].[Id] = [Answer].[LeadId]
+            WHERE (@LeadId IS NULL OR [Answer].[LeadId] = @LeadId)
+              AND (@CanViewAll = 1 OR [LeadFilter].[OwnerSubjectId] = @OwnerSubjectId)
+            ORDER BY [Answer].[LeadId], [Answer].[QuestionCode];
 
             SELECT
-                [LeadId],
-                [ChangedAtUtc],
-                [ChangedBy],
-                [Action],
-                [Summary]
-            FROM [crm].[LeadAuditEventView]
-            WHERE @LeadId IS NULL OR [LeadId] = @LeadId
-            ORDER BY [LeadId], [ChangedAtUtc], [Id];
+                [Audit].[LeadId],
+                [Audit].[ChangedAtUtc],
+                [Audit].[ChangedBy],
+                [Audit].[Action],
+                [Audit].[Summary]
+            FROM [crm].[LeadAuditEventView] AS [Audit]
+            INNER JOIN [crm].[Lead] AS [LeadFilter] ON [LeadFilter].[Id] = [Audit].[LeadId]
+            WHERE (@LeadId IS NULL OR [Audit].[LeadId] = @LeadId)
+              AND (@CanViewAll = 1 OR [LeadFilter].[OwnerSubjectId] = @OwnerSubjectId)
+            ORDER BY [Audit].[LeadId], [Audit].[ChangedAtUtc], [Audit].[Id];
             """;
 
         await using var command = new SqlCommand(sql, connection);
         AddNullableParameter(command, "@LeadId", SqlDbType.UniqueIdentifier, leadId);
+        command.Parameters.AddWithValue("@CanViewAll", scope.CanViewAll);
+        AddSizedParameter(command, "@OwnerSubjectId", SqlDbType.NVarChar, scope.SubjectId, 200);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
@@ -618,9 +627,9 @@ public sealed class SqlServerLeadDataService(DataAccessOptions options)
             .ToArray();
     }
 
-    private async Task<LeadDto?> GetLeadByIdAsync(SqlConnection connection, Guid leadId, CancellationToken cancellationToken)
+    private async Task<LeadDto?> GetLeadByIdAsync(SqlConnection connection, Guid leadId, LeadQueryScope scope, CancellationToken cancellationToken)
     {
-        return (await GetLeadsAsync(connection, leadId, cancellationToken)).SingleOrDefault();
+        return (await GetLeadsAsync(connection, leadId, scope, cancellationToken)).SingleOrDefault();
     }
 
     private LeadDto BuildLeadDto(
