@@ -38,8 +38,8 @@ final class HomeViewModel: ObservableObject {
 
     var pieTitle: String {
         isAdmin
-            ? NSLocalizedString("Pipeline by Salesperson", comment: "Dashboard pie title")
-            : NSLocalizedString("Pipeline by Domain", comment: "Dashboard pie title")
+            ? "Pipeline by Salesperson"
+            : "Pipeline by Domain"
     }
 
     var pieSlices: [DashboardSlice] {

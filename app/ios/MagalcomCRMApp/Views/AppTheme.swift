@@ -11,9 +11,15 @@ struct UserIdentityMenu: View {
     var body: some View {
         Menu {
             Text(user.displayName)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .multilineTextAlignment(.trailing)
             Text(user.email)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .multilineTextAlignment(.trailing)
             if !user.roles.isEmpty {
                 Text("Roles: \(user.roles.joined(separator: ", "))")
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
             }
             Button("Sign out", role: .destructive) {
                 onSignOut()
@@ -23,6 +29,7 @@ struct UserIdentityMenu: View {
                 .frame(width: 36, height: 36)
                 .clipShape(Circle())
         }
+        .environment(\.layoutDirection, .rightToLeft)
     }
 
     @ViewBuilder

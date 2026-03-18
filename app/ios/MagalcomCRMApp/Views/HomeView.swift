@@ -1,10 +1,34 @@
 import Charts
 import SwiftUI
 
+private func localizedHome(_ key: String, locale: Locale) -> String {
+    var candidates: [String] = [locale.identifier]
+    let languageCode = locale.identifier
+        .components(separatedBy: CharacterSet(charactersIn: "_-"))
+        .first ?? locale.identifier
+    if !languageCode.isEmpty && languageCode != locale.identifier {
+        candidates.append(languageCode)
+    }
+
+    for candidate in candidates where !candidate.isEmpty {
+        guard let path = Bundle.main.path(forResource: candidate, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            continue
+        }
+        let localizedValue = bundle.localizedString(forKey: key, value: key, table: nil)
+        if localizedValue != key {
+            return localizedValue
+        }
+    }
+
+    return Bundle.main.localizedString(forKey: key, value: key, table: nil)
+}
+
 struct HomeView: View {
     @ObservedObject var authService: AuthService
     let onAddLead: () -> Void
     @StateObject private var viewModel: HomeViewModel
+    @Environment(\.locale) private var locale
 
     init(authService: AuthService, onAddLead: @escaping () -> Void) {
         self.authService = authService
@@ -96,7 +120,7 @@ struct HomeView: View {
 
     private var pieCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(viewModel.pieTitle)
+            Text(localizedHome(viewModel.pieTitle, locale: locale))
                 .font(.headline)
 
             if viewModel.pieSlices.isEmpty {
@@ -106,19 +130,19 @@ struct HomeView: View {
                 if #available(iOS 17.0, *) {
                     Chart(viewModel.pieSlices) { slice in
                         SectorMark(
-                            angle: .value("Amount", slice.value),
+                            angle: .value(localizedHome("Amount", locale: locale), slice.value),
                             innerRadius: .ratio(0.55),
                             angularInset: 2
                         )
-                        .foregroundStyle(by: .value("Segment", slice.label))
+                        .foregroundStyle(by: .value(localizedHome("Segment", locale: locale), slice.label))
                     }
                     .chartLegend(position: .bottom, alignment: .leading)
                     .frame(height: 300)
                 } else {
                     Chart(viewModel.pieSlices) { slice in
                         BarMark(
-                            x: .value("Segment", slice.label),
-                            y: .value("Amount", slice.value)
+                            x: .value(localizedHome("Segment", locale: locale), slice.label),
+                            y: .value(localizedHome("Amount", locale: locale), slice.value)
                         )
                         .foregroundStyle(AppTheme.brandPrimary)
                     }
@@ -134,13 +158,13 @@ struct HomeView: View {
     private var quartersCard: some View {
         let thisYear = Calendar(identifier: .gregorian).component(.year, from: Date())
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Forecast by Quarter (\(thisYear)-\(thisYear + 1))")
+            Text(String(format: localizedHome("Forecast by Quarter (%d-%d)", locale: locale), thisYear, thisYear + 1))
                 .font(.headline)
 
             Chart(viewModel.quarterBars) { bucket in
                 BarMark(
-                    x: .value("Quarter", bucket.label),
-                    y: .value("Amount", bucket.value)
+                    x: .value(localizedHome("Quarter", locale: locale), bucket.label),
+                    y: .value(localizedHome("Amount", locale: locale), bucket.value)
                 )
                 .foregroundStyle(bucket.year == thisYear ? AppTheme.brandPrimary : .gray)
             }
