@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private func localized(_ key: String, locale: Locale) -> String {
     var candidates: [String] = [locale.identifier]
@@ -281,6 +282,56 @@ private struct EditableAmountLine: Identifiable {
     var note: String
 }
 
+private struct DirectionalTextField: UIViewRepresentable {
+    final class Coordinator: NSObject {
+        var parent: DirectionalTextField
+
+        init(parent: DirectionalTextField) {
+            self.parent = parent
+        }
+
+        @objc func textDidChange(_ sender: UITextField) {
+            parent.text = sender.text ?? ""
+        }
+    }
+
+    let placeholder: String
+    @Binding var text: String
+    var keyboardType: UIKeyboardType = .default
+    var alignment: NSTextAlignment = .right
+    var forceLeftToRight = false
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField(frame: .zero)
+        textField.borderStyle = .none
+        textField.clearButtonMode = .whileEditing
+        textField.adjustsFontForContentSizeCategory = true
+        textField.font = UIFont.preferredFont(forTextStyle: .body)
+        textField.keyboardType = keyboardType
+        textField.textAlignment = alignment
+        textField.semanticContentAttribute = forceLeftToRight ? .forceLeftToRight : .unspecified
+        textField.placeholder = placeholder
+        textField.text = text
+        textField.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        context.coordinator.parent = self
+        uiView.placeholder = placeholder
+        if uiView.text != text {
+            uiView.text = text
+        }
+        uiView.keyboardType = keyboardType
+        uiView.textAlignment = alignment
+        uiView.semanticContentAttribute = forceLeftToRight ? .forceLeftToRight : .unspecified
+    }
+}
+
 private struct LeadEditorSheet: View {
     @ObservedObject var viewModel: LeadsViewModel
     let mode: LeadEditorMode
@@ -423,10 +474,6 @@ private struct LeadEditorSheet: View {
 
     private var qualificationOptions: [BinaryChoice] {
         [.yes, .no]
-    }
-
-    private var amountTextAlignment: TextAlignment {
-        layoutDirection == .rightToLeft ? .trailing : .leading
     }
 
     private var amountRowAlignment: Alignment {
@@ -585,22 +632,33 @@ private struct LeadEditorSheet: View {
                                 }
                             }
 
-                            TextField(localized("Amount", locale: locale), text: $line.amountText)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(amountTextAlignment)
-                                .frame(maxWidth: .infinity, alignment: amountRowAlignment)
-                                .environment(\.layoutDirection, .leftToRight)
+                            DirectionalTextField(
+                                placeholder: localized("Amount", locale: locale),
+                                text: $line.amountText,
+                                keyboardType: .decimalPad,
+                                alignment: layoutDirection == .rightToLeft ? .right : .left,
+                                forceLeftToRight: true
+                            )
+                            .frame(maxWidth: .infinity, alignment: amountRowAlignment)
 
-                            TextField(localized("Note", locale: locale), text: $line.note)
-                                .multilineTextAlignment(amountTextAlignment)
-                                .frame(maxWidth: .infinity, alignment: amountRowAlignment)
-                                .environment(\.layoutDirection, .leftToRight)
+                            DirectionalTextField(
+                                placeholder: localized("Note", locale: locale),
+                                text: $line.note,
+                                keyboardType: .default,
+                                alignment: layoutDirection == .rightToLeft ? .right : .left,
+                                forceLeftToRight: false
+                            )
+                            .frame(maxWidth: .infinity, alignment: amountRowAlignment)
 
-                            Button(localized("Remove line", locale: locale), role: .destructive) {
-                                amountLines.removeAll { $0.id == line.id }
+                            HStack {
+                                Button(localized("Remove line", locale: locale), role: .destructive) {
+                                    amountLines.removeAll { $0.id == line.id }
+                                }
+                                .buttonStyle(.borderless)
+                                .font(.footnote)
+                                Spacer(minLength: 0)
                             }
-                            .font(.footnote)
-                            .frame(maxWidth: .infinity, alignment: rowAlignment)
+                            .frame(maxWidth: .infinity, alignment: amountRowAlignment)
                         }
                         .padding(.vertical, 4)
                     }
@@ -617,11 +675,14 @@ private struct LeadEditorSheet: View {
                     }
                     .frame(maxWidth: .infinity, alignment: rowAlignment)
 
-                    TextField(localized("Actual awarded amount", locale: locale), text: $actualAwardedAmountText)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(amountTextAlignment)
-                        .frame(maxWidth: .infinity, alignment: amountRowAlignment)
-                        .environment(\.layoutDirection, .leftToRight)
+                    DirectionalTextField(
+                        placeholder: localized("Actual awarded amount", locale: locale),
+                        text: $actualAwardedAmountText,
+                        keyboardType: .decimalPad,
+                        alignment: layoutDirection == .rightToLeft ? .right : .left,
+                        forceLeftToRight: true
+                    )
+                    .frame(maxWidth: .infinity, alignment: amountRowAlignment)
                 }
 
                 Section(localized("Lead Details", locale: locale)) {
