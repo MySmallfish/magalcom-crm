@@ -1,0 +1,58 @@
+name: MagalcomCRMApp
+options:
+  createIntermediateGroups: true
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "17.0"
+
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: 1
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    ENABLE_PREVIEWS: NO
+
+targets:
+  MagalcomCRMApp:
+    type: application
+    platform: iOS
+    sources:
+      - MagalcomCRMApp
+    resources:
+      - MagalcomCRMApp/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.magalcom.crm.ios
+        PRODUCT_NAME: MagalcomCRMApp
+        INFOPLIST_FILE: MagalcomCRMApp/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: 1
+        DEVELOPMENT_ASSET_PATHS: ""
+    info:
+      path: MagalcomCRMApp/Info.plist
+      properties:
+        API_BASE_URL: http://127.0.0.1:7002
+        ENTRA_TENANT_ID: REPLACE_WITH_TENANT_ID
+        ENTRA_CLIENT_ID: REPLACE_WITH_CLIENT_ID
+        ENTRA_SCOPE: REPLACE_WITH_SCOPE
+        ENTRA_REDIRECT_URI: magalcomcrm://auth
+        ENTRA_POST_LOGOUT_REDIRECT_URI: magalcomcrm://auth
+        APP_DEFAULT_LOCALE: he
+        APP_LAYOUT_DIRECTION: rtl
+        NSAppTransportSecurity:
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+            127.0.0.1:
+              NSExceptionAllowsInsecureHTTPLoads: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiresFullScreen: true
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - magalcomcrm

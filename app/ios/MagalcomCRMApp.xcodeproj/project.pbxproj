@@ -1,0 +1,421 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F07C8832281FEEE0F02497C /* demo-profile.png in Resources */ = {isa = PBXBuildFile; fileRef = B1025E767A089D544E7D3C30 /* demo-profile.png */; };
+		147250D9192FFB171BF9B770 /* LeadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBDD1F92E7067F497230069 /* LeadsView.swift */; };
+		1CF3676454F8487598AAC983 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6633E9224C826D19D6A6FD7A /* AppTheme.swift */; };
+		20702C29E19280DBA8EB6211 /* ReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 984EA419610852C94297E5C7 /* ReportViewModel.swift */; };
+		26EB90EC2F642E204E3C3889 /* KeychainStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7058068707CF176C135069C6 /* KeychainStorage.swift */; };
+		306A5CBCCF934E299EF921B6 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2102D42B453C8F5CF31127F1 /* AuthService.swift */; };
+		468D04374B9C4809AAA51DAE /* ReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4C46D13CA331CFAA9959CC /* ReportView.swift */; };
+		4D0DC8BB830F9148B38EE454 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2E1D96BD76FB5FC29FD1D6 /* HomeViewModel.swift */; };
+		67DC39B2964A6ACC0BB5F097 /* PKCEGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C89F0949D4B6055933DFA8F /* PKCEGenerator.swift */; };
+		7399A3085EE5121BC6798458 /* LeadsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E034FB6383E3A4DCF2A2B677 /* LeadsViewModel.swift */; };
+		751000FABD39875ACCD83734 /* ConfigurationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBFE5F44185107217B62C3DB /* ConfigurationService.swift */; };
+		8EE8543B42A24FF05B6DB7C5 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D0E2941B166BAD036E666E /* AppConfiguration.swift */; };
+		9A2AF48C6E9B34153B1BFDF4 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F540B3670D8E62705A189E /* Models.swift */; };
+		A434802F1A9E1234E94B8D6B /* magalcom-logo.png in Resources */ = {isa = PBXBuildFile; fileRef = A61CFC667733DD091E78032F /* magalcom-logo.png */; };
+		A712378B39890602A2AD0417 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4537509F08D8D3B8ED5D7DD7 /* Localizable.strings */; };
+		BA40888A53B7BFAA21C34917 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767ED552F5E1F7088D679B89 /* MainTabView.swift */; };
+		C2BC9D5B11EA1DC839D5F3EF /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114F6923A39F06FCFA64F594 /* LoginView.swift */; };
+		CF846D3637CD0082966E60A1 /* MagalcomCRMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C57E18B9C4639231942ECC6 /* MagalcomCRMApp.swift */; };
+		D09020C21C2AF7D1DD11D94F /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A60D75F52A6B3C3CE9EBA3 /* ShareSheet.swift */; };
+		D3CB59EC95B40398952933CA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D8E73DE894FAA0938AD37D /* APIClient.swift */; };
+		E9B798DDCBC80CAF1EBE14E8 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DB59D164542C48B1A14B9EE /* HomeView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C89F0949D4B6055933DFA8F /* PKCEGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKCEGenerator.swift; sourceTree = "<group>"; };
+		114F6923A39F06FCFA64F594 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		13603B15750FB1B59F73F736 /* MagalcomCRMApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MagalcomCRMApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2102D42B453C8F5CF31127F1 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		2C2E1D96BD76FB5FC29FD1D6 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		2DB59D164542C48B1A14B9EE /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		4537509F08D8D3B8ED5D7DD7 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Localizable.strings; path = he.lproj/Localizable.strings; sourceTree = "<group>"; };
+		56A60D75F52A6B3C3CE9EBA3 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		6633E9224C826D19D6A6FD7A /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		7058068707CF176C135069C6 /* KeychainStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStorage.swift; sourceTree = "<group>"; };
+		767ED552F5E1F7088D679B89 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		8C57E18B9C4639231942ECC6 /* MagalcomCRMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagalcomCRMApp.swift; sourceTree = "<group>"; };
+		97D8E73DE894FAA0938AD37D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		984EA419610852C94297E5C7 /* ReportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportViewModel.swift; sourceTree = "<group>"; };
+		9A4C46D13CA331CFAA9959CC /* ReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportView.swift; sourceTree = "<group>"; };
+		A61CFC667733DD091E78032F /* magalcom-logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "magalcom-logo.png"; sourceTree = "<group>"; };
+		A8D0E2941B166BAD036E666E /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		AFBDD1F92E7067F497230069 /* LeadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadsView.swift; sourceTree = "<group>"; };
+		B1025E767A089D544E7D3C30 /* demo-profile.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "demo-profile.png"; sourceTree = "<group>"; };
+		CBFE5F44185107217B62C3DB /* ConfigurationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationService.swift; sourceTree = "<group>"; };
+		E034FB6383E3A4DCF2A2B677 /* LeadsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadsViewModel.swift; sourceTree = "<group>"; };
+		EECE88384A128FCB104A71CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F5F540B3670D8E62705A189E /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		121DA7FBB66F42D72249CB7D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F5F540B3670D8E62705A189E /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		53124366BC49FE0931C318C2 /* MagalcomCRMApp */ = {
+			isa = PBXGroup;
+			children = (
+				A8D0E2941B166BAD036E666E /* AppConfiguration.swift */,
+				B1025E767A089D544E7D3C30 /* demo-profile.png */,
+				EECE88384A128FCB104A71CD /* Info.plist */,
+				4537509F08D8D3B8ED5D7DD7 /* Localizable.strings */,
+				A61CFC667733DD091E78032F /* magalcom-logo.png */,
+				8C57E18B9C4639231942ECC6 /* MagalcomCRMApp.swift */,
+				121DA7FBB66F42D72249CB7D /* Models */,
+				79596B41590F0D57E42F7B79 /* Services */,
+				561CFB650CBF9FB2AB1598C3 /* ViewModels */,
+				9C1C790D60814D14D155D0B5 /* Views */,
+			);
+			path = MagalcomCRMApp;
+			sourceTree = "<group>";
+		};
+		561CFB650CBF9FB2AB1598C3 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				2C2E1D96BD76FB5FC29FD1D6 /* HomeViewModel.swift */,
+				E034FB6383E3A4DCF2A2B677 /* LeadsViewModel.swift */,
+				984EA419610852C94297E5C7 /* ReportViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		79596B41590F0D57E42F7B79 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				97D8E73DE894FAA0938AD37D /* APIClient.swift */,
+				2102D42B453C8F5CF31127F1 /* AuthService.swift */,
+				CBFE5F44185107217B62C3DB /* ConfigurationService.swift */,
+				7058068707CF176C135069C6 /* KeychainStorage.swift */,
+				0C89F0949D4B6055933DFA8F /* PKCEGenerator.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9C1C790D60814D14D155D0B5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				6633E9224C826D19D6A6FD7A /* AppTheme.swift */,
+				2DB59D164542C48B1A14B9EE /* HomeView.swift */,
+				AFBDD1F92E7067F497230069 /* LeadsView.swift */,
+				114F6923A39F06FCFA64F594 /* LoginView.swift */,
+				767ED552F5E1F7088D679B89 /* MainTabView.swift */,
+				9A4C46D13CA331CFAA9959CC /* ReportView.swift */,
+				56A60D75F52A6B3C3CE9EBA3 /* ShareSheet.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E327F26884D58683E0C676F9 = {
+			isa = PBXGroup;
+			children = (
+				53124366BC49FE0931C318C2 /* MagalcomCRMApp */,
+				FD56C1E59CB4E3E69D331126 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FD56C1E59CB4E3E69D331126 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13603B15750FB1B59F73F736 /* MagalcomCRMApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5E0A702ADA15EF7BFD8062BA /* MagalcomCRMApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F6F0FE7DD2EA31DFC1EC7469 /* Build configuration list for PBXNativeTarget "MagalcomCRMApp" */;
+			buildPhases = (
+				57DF76E5EE310DFC42C512A6 /* Sources */,
+				5D21EC2927FDC68003DDFE4B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MagalcomCRMApp;
+			packageProductDependencies = (
+			);
+			productName = MagalcomCRMApp;
+			productReference = 13603B15750FB1B59F73F736 /* MagalcomCRMApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B6E06ADCAD243F1E85B01728 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5E0A702ADA15EF7BFD8062BA = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 503322FFD44C9785594F0FF8 /* Build configuration list for PBXProject "MagalcomCRMApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				he,
+			);
+			mainGroup = E327F26884D58683E0C676F9;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5E0A702ADA15EF7BFD8062BA /* MagalcomCRMApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5D21EC2927FDC68003DDFE4B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A712378B39890602A2AD0417 /* Localizable.strings in Resources */,
+				0F07C8832281FEEE0F02497C /* demo-profile.png in Resources */,
+				A434802F1A9E1234E94B8D6B /* magalcom-logo.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		57DF76E5EE310DFC42C512A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3CB59EC95B40398952933CA /* APIClient.swift in Sources */,
+				8EE8543B42A24FF05B6DB7C5 /* AppConfiguration.swift in Sources */,
+				1CF3676454F8487598AAC983 /* AppTheme.swift in Sources */,
+				306A5CBCCF934E299EF921B6 /* AuthService.swift in Sources */,
+				751000FABD39875ACCD83734 /* ConfigurationService.swift in Sources */,
+				E9B798DDCBC80CAF1EBE14E8 /* HomeView.swift in Sources */,
+				4D0DC8BB830F9148B38EE454 /* HomeViewModel.swift in Sources */,
+				26EB90EC2F642E204E3C3889 /* KeychainStorage.swift in Sources */,
+				147250D9192FFB171BF9B770 /* LeadsView.swift in Sources */,
+				7399A3085EE5121BC6798458 /* LeadsViewModel.swift in Sources */,
+				C2BC9D5B11EA1DC839D5F3EF /* LoginView.swift in Sources */,
+				CF846D3637CD0082966E60A1 /* MagalcomCRMApp.swift in Sources */,
+				BA40888A53B7BFAA21C34917 /* MainTabView.swift in Sources */,
+				9A2AF48C6E9B34153B1BFDF4 /* Models.swift in Sources */,
+				67DC39B2964A6ACC0BB5F097 /* PKCEGenerator.swift in Sources */,
+				468D04374B9C4809AAA51DAE /* ReportView.swift in Sources */,
+				20702C29E19280DBA8EB6211 /* ReportViewModel.swift in Sources */,
+				D09020C21C2AF7D1DD11D94F /* ShareSheet.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5B8F69899F6D6354E107778A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_ASSET_PATHS = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MagalcomCRMApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.magalcom.crm.ios;
+				PRODUCT_NAME = MagalcomCRMApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		6A28977AC7D2667F6480E1D6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		94EC1A0A6D38A8BD80DD538D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_ASSET_PATHS = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MagalcomCRMApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.magalcom.crm.ios;
+				PRODUCT_NAME = MagalcomCRMApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		95FA4964A1F694478F3645AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_PREVIEWS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		503322FFD44C9785594F0FF8 /* Build configuration list for PBXProject "MagalcomCRMApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95FA4964A1F694478F3645AD /* Debug */,
+				6A28977AC7D2667F6480E1D6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F6F0FE7DD2EA31DFC1EC7469 /* Build configuration list for PBXNativeTarget "MagalcomCRMApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B8F69899F6D6354E107778A /* Debug */,
+				94EC1A0A6D38A8BD80DD538D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B6E06ADCAD243F1E85B01728 /* Project object */;
+}
