@@ -77,6 +77,11 @@ app.MapGet("/shell/config", (IConfiguration configuration) =>
             redirectUri = configuration["Shell:Authentication:Entra:RedirectUri"] ?? string.Empty,
             postLogoutRedirectUri = configuration["Shell:Authentication:Entra:PostLogoutRedirectUri"] ?? string.Empty
         },
+        localization = new
+        {
+            locale = configuration["Shell:Localization:DefaultLocale"] ?? "he",
+            direction = configuration["Shell:Localization:Direction"] ?? "rtl"
+        },
         features = new
         {
             miniAppsExternalOrigins = configuration.GetValue<bool>("Features:MiniAppsExternalOrigins"),

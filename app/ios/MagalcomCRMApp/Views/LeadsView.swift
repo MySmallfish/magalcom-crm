@@ -426,11 +426,11 @@ private struct LeadEditorSheet: View {
     }
 
     private var amountTextAlignment: TextAlignment {
-        .leading
+        layoutDirection == .rightToLeft ? .trailing : .leading
     }
 
     private var amountRowAlignment: Alignment {
-        .leading
+        layoutDirection == .rightToLeft ? .trailing : .leading
     }
 
     var body: some View {
@@ -589,10 +589,12 @@ private struct LeadEditorSheet: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(amountTextAlignment)
                                 .frame(maxWidth: .infinity, alignment: amountRowAlignment)
+                                .environment(\.layoutDirection, .leftToRight)
 
                             TextField(localized("Note", locale: locale), text: $line.note)
                                 .multilineTextAlignment(amountTextAlignment)
                                 .frame(maxWidth: .infinity, alignment: amountRowAlignment)
+                                .environment(\.layoutDirection, .leftToRight)
 
                             Button(localized("Remove line", locale: locale), role: .destructive) {
                                 amountLines.removeAll { $0.id == line.id }
@@ -619,6 +621,7 @@ private struct LeadEditorSheet: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(amountTextAlignment)
                         .frame(maxWidth: .infinity, alignment: amountRowAlignment)
+                        .environment(\.layoutDirection, .leftToRight)
                 }
 
                 Section(localized("Lead Details", locale: locale)) {
